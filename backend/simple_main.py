@@ -10,6 +10,10 @@ import json
 import math
 import re
 import uuid
+import asyncio
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
+from qdrant_client.http import models
 
 app = FastAPI(title="Invoice Reimbursement System API", version="1.0.0")
 
@@ -25,7 +29,35 @@ app.add_middleware(
 # Global storage for RAG chatbot
 invoices_storage = []
 conversation_history = {}
-vector_embeddings = {}
+
+# Qdrant client initialization
+qdrant_client = None
+COLLECTION_NAME = "invoices"
+
+async def initialize_qdrant():
+    """Initialize Qdrant client and collection"""
+    global qdrant_client
+    try:
+        qdrant_client = QdrantClient(
+            url=os.getenv("QDRANT_URL"),
+            api_key=os.getenv("QDRANT_API_KEY"),
+        )
+        
+        # Create collection if it doesn't exist
+        try:
+            collection_info = qdrant_client.get_collection(COLLECTION_NAME)
+            print(f"✅ Connected to existing Qdrant collection: {COLLECTION_NAME}")
+        except Exception:
+            # Collection doesn't exist, create it
+            qdrant_client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+            )
+            print(f"✅ Created new Qdrant collection: {COLLECTION_NAME}")
+            
+    except Exception as e:
+        print(f"❌ Failed to initialize Qdrant: {e}")
+        qdrant_client = None
 
 # RAG Helper Functions
 def extract_filters_from_natural_language(query: str) -> Dict[str, Any]:
@@ -83,30 +115,145 @@ def create_basic_embedding(text: str) -> List[float]:
     """Create a basic embedding using simple text features"""
     words = text.lower().split()
     
-    # Create a simple feature vector based on keywords
-    features = [0.0] * 50  # 50-dimensional vector
+    # Create a 384-dimensional vector with basic features
+    embedding = [0.0] * 384
     
-    # Feature extraction based on keywords
-    keywords = {
-        "declined": 0, "approved": 1, "reimbursed": 2, "fraud": 3,
-        "cab": 4, "travel": 5, "meal": 6, "employee": 7,
-        "amount": 8, "invoice": 9, "policy": 10, "reason": 11
-    }
+    # Feature 1-10: Word count characteristics
+    embedding[0] = len(words) / 1000.0  # Normalize word count
+    embedding[1] = len(set(words)) / len(words) if words else 0  # Vocabulary diversity
+    embedding[2] = sum(len(word) for word in words) / len(words) if words else 0  # Average word length
     
-    for word in words:
-        if word in keywords:
-            features[keywords[word]] += 1.0
+    # Feature 11-20: Content type indicators
+    embedding[10] = 1.0 if any(word in ['meal', 'food', 'restaurant', 'lunch', 'dinner'] for word in words) else 0.0
+    embedding[11] = 1.0 if any(word in ['travel', 'flight', 'hotel', 'train', 'bus'] for word in words) else 0.0
+    embedding[12] = 1.0 if any(word in ['cab', 'taxi', 'uber', 'ola', 'transport'] for word in words) else 0.0
+    embedding[13] = 1.0 if any(word in ['alcohol', 'beer', 'wine', 'liquor', 'whisky'] for word in words) else 0.0
     
-    # Add length-based features
-    features[20] = len(words)
-    features[21] = len(text)
+    # Feature 21-30: Amount-related features
+    import re
+    amounts = re.findall(r'\d+\.?\d*', text)
+    if amounts:
+        embedding[20] = float(amounts[0]) / 10000.0  # Normalize first amount
+        embedding[21] = len(amounts) / 10.0  # Number of amounts
     
-    # Normalize
-    magnitude = math.sqrt(sum(f * f for f in features))
-    if magnitude > 0:
-        features = [f / magnitude for f in features]
+    # Feature 31-40: Name patterns
+    names = re.findall(r'\b[A-Z][a-z]+\b', text)
+    if names:
+        embedding[30] = len(names) / 10.0
+        embedding[31] = len(set(names)) / len(names) if names else 0
     
-    return features
+    # Fill remaining dimensions with hash-based features
+    for i in range(40, 384):
+        embedding[i] = (hash(text + str(i)) % 1000) / 1000.0
+    
+    return embedding
+
+async def store_invoice_in_qdrant(invoice_data: dict):
+    """Store invoice data in Qdrant vector database"""
+    if not qdrant_client:
+        print("⚠️ Qdrant client not initialized, skipping vector storage")
+        return
+    
+    try:
+        # Create embedding from invoice content
+        content_text = f"""
+        Employee: {invoice_data.get('employee_name', 'Unknown')}
+        Date: {invoice_data.get('invoice_date', 'Unknown')}
+        Amount: {invoice_data.get('amount', 0)}
+        Type: {invoice_data.get('invoice_type', 'Unknown')}
+        Status: {invoice_data.get('reimbursement_status', 'Unknown')}
+        Content: {invoice_data.get('invoice_text', '')[:1000]}
+        """
+        
+        embedding = create_basic_embedding(content_text)
+        
+        # Create point for Qdrant
+        point = PointStruct(
+            id=invoice_data['invoice_id'],
+            vector=embedding,
+            payload={
+                "employee_name": invoice_data.get('employee_name', 'Unknown'),
+                "invoice_date": invoice_data.get('invoice_date', 'Unknown'),
+                "amount": float(invoice_data.get('amount', 0)),
+                "invoice_type": invoice_data.get('invoice_type', 'Unknown'),
+                "reimbursement_status": invoice_data.get('reimbursement_status', 'Unknown'),
+                "fraud_detected": invoice_data.get('fraud_detected', False),
+                "content": content_text[:500]  # Limit content size
+            }
+        )
+        
+        # Store in Qdrant
+        qdrant_client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[point]
+        )
+        
+        print(f"✅ Stored invoice {invoice_data['invoice_id']} in Qdrant")
+        
+    except Exception as e:
+        print(f"❌ Error storing invoice in Qdrant: {e}")
+
+async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, limit: int = 5) -> List[Dict[str, Any]]:
+    """Search invoices in Qdrant vector database"""
+    if not qdrant_client:
+        print("⚠️ Qdrant client not initialized, falling back to local search")
+        return search_invoices_by_similarity(query, filters or {}, limit)
+    
+    try:
+        # Create query embedding
+        query_embedding = create_basic_embedding(query)
+        
+        # Build filter conditions
+        filter_conditions = []
+        if filters:
+            for key, value in filters.items():
+                if key == "employee_name" and value:
+                    filter_conditions.append(
+                        FieldCondition(key="employee_name", match=MatchValue(value=value))
+                    )
+                elif key == "invoice_type" and value:
+                    filter_conditions.append(
+                        FieldCondition(key="invoice_type", match=MatchValue(value=value))
+                    )
+                elif key == "fraud_detected" and value is not None:
+                    filter_conditions.append(
+                        FieldCondition(key="fraud_detected", match=MatchValue(value=value))
+                    )
+        
+        # Build filter
+        query_filter = Filter(must=filter_conditions) if filter_conditions else None
+        
+        # Search in Qdrant
+        search_results = qdrant_client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_embedding,
+            query_filter=query_filter,
+            limit=limit,
+            with_payload=True
+        )
+        
+        # Convert results to expected format
+        results = []
+        for result in search_results:
+            results.append({
+                "invoice_id": result.id,
+                "employee_name": result.payload.get("employee_name", "Unknown"),
+                "invoice_date": result.payload.get("invoice_date", "Unknown"),
+                "amount": result.payload.get("amount", 0),
+                "invoice_type": result.payload.get("invoice_type", "Unknown"),
+                "reimbursement_status": result.payload.get("reimbursement_status", "Unknown"),
+                "fraud_detected": result.payload.get("fraud_detected", False),
+                "content": result.payload.get("content", ""),
+                "similarity_score": result.score
+            })
+        
+        print(f"✅ Found {len(results)} results in Qdrant")
+        return results
+        
+    except Exception as e:
+        print(f"❌ Error searching Qdrant: {e}")
+        # Fallback to local search
+        return search_invoices_by_similarity(query, filters or {}, limit)
 
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """Calculate cosine similarity between two vectors"""
@@ -310,6 +457,11 @@ class InvoiceAnalysisResponse(BaseModel):
     message: str
     processed_count: int
     results: List[dict]
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize Qdrant on startup"""
+    await initialize_qdrant()
 
 @app.get("/")
 async def root():
@@ -618,6 +770,9 @@ async def analyze_invoices(
             if key not in existing_keys:
                 invoices_storage.append(result)
                 existing_keys.add(key)
+                
+                # Store in Qdrant vector database
+                await store_invoice_in_qdrant(result)
         
         return InvoiceAnalysisResponse(
             success=True,
@@ -648,8 +803,8 @@ async def chatbot_query(request: ChatbotRequest):
         if request.filters:
             filters.update(request.filters)
         
-        # Perform vector search on invoice data
-        relevant_invoices = search_invoices_by_similarity(query, filters, limit=5)
+        # Perform vector search on invoice data using Qdrant
+        relevant_invoices = await search_invoices_in_qdrant(query, filters, limit=5)
         
         # Build context from retrieved invoices
         context = build_context_from_invoices(relevant_invoices)

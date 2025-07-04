@@ -14,9 +14,9 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 
 ### Backend Architecture
 - **Framework**: FastAPI for REST API endpoints
-- **Service Layer**: Modular services for PDF processing, LLM analysis, vector operations, and fraud detection
-- **Database Layer**: Dual database approach with MongoDB for metadata and Qdrant for vector storage
-- **Processing Pipeline**: Multi-stage processing with PDF parsing, LLM analysis, and vector embedding
+- **Service Layer**: Simplified single-file architecture with embedded functions for PDF processing, LLM analysis, and fraud detection
+- **Database Layer**: Hybrid approach with in-memory storage for metadata and Qdrant vector database for semantic search
+- **Processing Pipeline**: Multi-stage processing with PDF parsing, LLM analysis, and vector embedding with automatic storage in Qdrant
 
 ### LLM Integration
 - **Provider**: Groq API for fast inference
@@ -42,9 +42,10 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - **Pattern Recognition**: Identifies potentially fraudulent behavior patterns
 
 ### Vector Database Service
-- **Embedding Model**: Uses sentence-transformers (all-MiniLM-L6-v2) for efficient embeddings
+- **Embedding Model**: Uses custom 384-dimensional feature vectors with keyword-based and hash-based features
 - **Storage**: Qdrant vector database for similarity search and retrieval
 - **Metadata Filtering**: Supports filtering by employee, date, status, and fraud indicators
+- **Integration**: Automatic storage of processed invoices in Qdrant with semantic search capabilities
 
 ### Chatbot Service
 - **RAG Implementation**: Retrieval-Augmented Generation for accurate responses
@@ -112,6 +113,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Updated RAG chatbot to use plain text responses instead of markdown formatting for better readability
 - July 04, 2025. Cleaned up interface by removing all emojis and sample query prompts for professional appearance
 - July 04, 2025. Fixed chatbot date display issue - resolved missing invoice_date field in source data formatting
+- July 04, 2025. Integrated Qdrant vector store - implemented full vector database integration with automatic invoice storage, semantic search, and metadata filtering while maintaining simplified architecture
 
 ## User Preferences
 
