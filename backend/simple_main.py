@@ -157,18 +157,37 @@ def search_invoices_by_similarity(query: str, filters: Dict[str, Any], limit: in
         if matches:
             filtered_invoices.append(invoice)
     
-    # Calculate similarity scores
+    # Calculate similarity scores with enhanced name matching
     scored_invoices = []
+    query_lower = query.lower()
+    
     for invoice in filtered_invoices:
         # Create invoice embedding
         invoice_text = f"{invoice.get('employee_name', '')} {invoice.get('reimbursement_status', '')} {invoice.get('reason', '')} {invoice.get('invoice_type', '')}"
         invoice_embedding = create_basic_embedding(invoice_text)
         
-        # Calculate similarity
+        # Calculate base similarity
         similarity = cosine_similarity(query_embedding, invoice_embedding)
         
+        # Apply name boost if employee name is mentioned in query
+        employee_name = invoice.get('employee_name', '').lower()
+        if employee_name and employee_name in query_lower:
+            # Give substantial boost for exact name matches
+            similarity += 0.8  # Increased boost to override other factors
+        
+        # Apply status boost if status-related terms are in query (but don't override name boost)
+        status = invoice.get('reimbursement_status', '').lower()
+        if any(word in query_lower for word in ['status', 'declined', 'approved', 'reimbursed', 'partial']):
+            if status and employee_name not in query_lower:  # Only boost if no specific name mentioned
+                similarity += 0.1  # Reduced boost to not interfere with name matching
+        
+        # Apply type boost if type is mentioned
+        invoice_type = invoice.get('invoice_type', '').lower()
+        if invoice_type and invoice_type in query_lower:
+            similarity += 0.3
+        
         invoice_with_score = invoice.copy()
-        invoice_with_score["score"] = similarity
+        invoice_with_score["score"] = min(similarity, 1.0)  # Cap at 1.0
         scored_invoices.append(invoice_with_score)
     
     # Sort by similarity score and return top results
