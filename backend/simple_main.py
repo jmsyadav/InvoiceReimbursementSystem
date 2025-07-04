@@ -54,6 +54,36 @@ async def initialize_qdrant():
                 vectors_config=VectorParams(size=384, distance=Distance.COSINE),
             )
             print(f"✅ Created new Qdrant collection: {COLLECTION_NAME}")
+        
+        # Create payload indexes for filtering
+        try:
+            from qdrant_client.models import PayloadSchemaType
+            
+            # Create index for employee_name field
+            qdrant_client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name="employee_name",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+            
+            # Create index for invoice_type field
+            qdrant_client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name="invoice_type",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+            
+            # Create index for fraud_detected field
+            qdrant_client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name="fraud_detected",
+                field_schema=PayloadSchemaType.BOOL
+            )
+            
+            print(f"✅ Created payload indexes for filtering")
+            
+        except Exception as e:
+            print(f"⚠️ Index creation info: {e}")  # May already exist
             
     except Exception as e:
         print(f"❌ Failed to initialize Qdrant: {e}")
@@ -173,6 +203,7 @@ async def store_invoice_in_qdrant(invoice_data: dict):
             id=point_id,
             vector=embedding,
             payload={
+                "invoice_id": invoice_data['invoice_id'],  # Store original string ID in payload
                 "employee_name": invoice_data.get('employee_name', 'Unknown'),
                 "invoice_date": invoice_data.get('invoice_date', 'Unknown'),
                 "amount": float(invoice_data.get('amount', 0)),
@@ -237,7 +268,7 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
         results = []
         for result in search_results:
             results.append({
-                "invoice_id": result.id,
+                "invoice_id": result.payload.get("invoice_id", f"ID-{result.id}"),
                 "employee_name": result.payload.get("employee_name", "Unknown"),
                 "invoice_date": result.payload.get("invoice_date", "Unknown"),
                 "amount": result.payload.get("amount", 0),
