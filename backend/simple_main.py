@@ -267,21 +267,20 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     """Extract employee name from PDF content or filename with enhanced patterns"""
     import re
     
-    # Enhanced patterns based on actual invoice formats
+    # Enhanced patterns based on actual invoice formats with more specific matching
     name_patterns = [
-        # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male"
-        r'Passenger\s*Details.*?\n([A-Za-z]+(?:\s+[A-Za-z]+)*)\s*\d+,?\s*[a-zA-Z]*',
-        # For cab invoices: "Customer Name Anjaneyaa K"
-        r'Customer\s*Name\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        # General customer patterns
-        r'Customer[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        r'Passenger[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        r'Employee[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        r'Name[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        # Title patterns
-        r'Mr\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        r'Ms\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-        r'Mrs\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male" - be very specific
+        r'Passenger\s*Details[^a-zA-Z]*\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\s+\d+,?\s*[a-zA-Z]*',
+        # For cab invoices: "Customer Name Anjaneyaa K" - ensure it's after "Customer Name"
+        r'Customer\s*Name\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        # More restrictive general patterns - must start with capital letter
+        r'Customer:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        r'Passenger:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        r'Employee:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        # Title patterns with word boundaries
+        r'\bMr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        r'\bMs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        r'\bMrs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
     ]
     
     for pattern in name_patterns:
@@ -298,9 +297,20 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
                 if 1 <= len(name_words) <= 3 and all(len(word) >= 2 for word in name_words):
                     # Check if it looks like a real name (alphabetic, not common words)
                     if all(word.isalpha() for word in name_words):
-                        # Additional check for common non-names
+                        # Additional check for common non-names and very long strings
                         combined_name = ' '.join(name_words).lower()
-                        if combined_name not in ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool']:
+                        full_name = ' '.join(name_words)
+                        
+                        # Reject very long strings (likely extracted from sentences)
+                        if len(full_name) > 25:
+                            continue
+                            
+                        # Reject names with more than 20 characters without spaces (concatenated words)
+                        if any(len(word) > 15 for word in name_words):
+                            continue
+                            
+                        # Check for common non-names and policy terms
+                        if combined_name not in ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool', 'lta', 'leave', 'travel', 'allowance', 'policy', 'baggage', 'allowed', 'carry', 'bag', 'upto', 'kilograms', 'weight', 'limit', 'excess', 'free', 'complimentary']:
                             return ' '.join(name_words).title()
     
     # Enhanced filename extraction as fallback
@@ -361,6 +371,8 @@ Respond only with valid JSON.
         )
         
         response_text = chat_completion.choices[0].message.content
+        if not response_text:
+            response_text = ""
         
         # Parse JSON response
         import json
