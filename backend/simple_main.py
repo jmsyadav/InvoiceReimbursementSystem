@@ -166,11 +166,14 @@ async def analyze_invoices(
                                     "employee_name": employee_name or f"Employee {invoice_counter + 1}",
                                     "invoice_date": date_fraud_info['invoice_date'],
                                     "amount": amount,
+                                    "invoice_type": invoice_type,  # Add at top level for frontend
                                     "reimbursement_status": status,
                                     "reason": reason,
                                     "fraud_detected": date_fraud_info['fraud_detected'],
                                     "fraud_reason": date_fraud_info['fraud_reason'],
                                     "invoice_text": pdf_text[:500] + "..." if len(pdf_text) > 500 else pdf_text,
+                                    "reporting_date": date_fraud_info['reporting_date'],
+                                    "dropping_date": date_fraud_info['dropping_date'],
                                     "invoice_data": {
                                         "invoice_type": invoice_type,
                                         "description": f"Invoice from {pdf_filename} in {invoice_file.filename}",
@@ -345,6 +348,10 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
         r'Customer\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         r'Passenger\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         r'Employee\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        # For meal invoices: "Avinash\nTable: #001" - name on line before "Table:"
+        r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*\n\s*Table:',
+        # Standalone names after date/time in meal invoices
+        r'Time:\s*\d{2}:\d{2}\s*\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         # Title patterns
         r'\bMr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         r'\bMs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
@@ -433,9 +440,17 @@ CRITICAL ANALYSIS RULES:
    - MEAL expenses: ₹200 per meal limit
    - CAB/TAXI expenses: ₹150 daily office cab allowance  
    - TRAVEL expenses: ₹2,000 per trip limit
-   - If invoice type is "cab" and amount > ₹150 → Partially Reimbursed for ₹150
-   - If invoice type is "travel" and amount > ₹2,000 → Partially Reimbursed for ₹2,000
-   - If invoice type is "meal" and amount > ₹200 → Partially Reimbursed for ₹200
+
+MATHEMATICAL COMPARISON FOR ₹{amount} ({invoice_type} category):
+   - If {invoice_type} is "cab": Compare ₹{amount} with ₹150
+     • ₹{amount} ≤ ₹150 → Fully Reimbursed
+     • ₹{amount} > ₹150 → Partially Reimbursed (₹150 only)
+   - If {invoice_type} is "travel": Compare ₹{amount} with ₹2,000
+     • ₹{amount} ≤ ₹2,000 → Fully Reimbursed  
+     • ₹{amount} > ₹2,000 → Partially Reimbursed (₹2,000 only)
+   - If {invoice_type} is "meal": Compare ₹{amount} with ₹200
+     • ₹{amount} ≤ ₹200 → Fully Reimbursed
+     • ₹{amount} > ₹200 → Partially Reimbursed (₹200 only)
 
 3. RESTRICTED ITEMS: Decline if contains alcohol, personal items, etc.
 4. SUBMISSION REQUIREMENTS: Check if proper documentation is provided
@@ -566,8 +581,9 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
         (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Departure\s*time', 'reporting'),
         # Cab invoice: "Invoice Date 17 May 2024"
         (r'Invoice\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
-        # Meal invoice: "Date: Dec 23, 2024 18:24"
+        # Meal invoice: "Date: Dec 23, 2024 18:24" and "Date: 26 Dec 2024"
         (r'Date:\s*([A-Za-z]{3}\s+\d{1,2},?\s+\d{4})', 'general'),
+        (r'Date:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
         
         # Standard date patterns as fallback
         (r'Reporting\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
