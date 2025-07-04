@@ -582,8 +582,23 @@ async def analyze_invoices(
                     results.append(result)
                     invoice_counter += 1
         
-        # Store results in memory
-        invoices_storage.extend(results)
+        # Store results in memory with deduplication
+        # Remove duplicates from existing storage based on employee name, amount, and date
+        existing_keys = set()
+        for existing_invoice in invoices_storage[:]:  # Create a copy to iterate
+            key = (existing_invoice.get('employee_name'), existing_invoice.get('amount'), existing_invoice.get('invoice_date'))
+            if key in existing_keys:
+                # Remove duplicate
+                invoices_storage.remove(existing_invoice)
+            else:
+                existing_keys.add(key)
+        
+        # Add new results, avoiding duplicates
+        for result in results:
+            key = (result.get('employee_name'), result.get('amount'), result.get('invoice_date'))
+            if key not in existing_keys:
+                invoices_storage.append(result)
+                existing_keys.add(key)
         
         return InvoiceAnalysisResponse(
             success=True,
@@ -668,6 +683,34 @@ async def get_processed_invoices():
         "success": True,
         "invoices": invoices_storage,
         "count": len(invoices_storage)
+    }
+
+@app.post("/clear-duplicates")
+async def clear_duplicates():
+    """Clear duplicate invoices from storage"""
+    global invoices_storage
+    
+    original_count = len(invoices_storage)
+    
+    # Remove duplicates based on employee name, amount, and date
+    seen_keys = set()
+    unique_invoices = []
+    
+    for invoice in invoices_storage:
+        key = (invoice.get('employee_name'), invoice.get('amount'), invoice.get('invoice_date'))
+        if key not in seen_keys:
+            unique_invoices.append(invoice)
+            seen_keys.add(key)
+    
+    invoices_storage = unique_invoices
+    removed_count = original_count - len(invoices_storage)
+    
+    return {
+        "success": True,
+        "message": f"Removed {removed_count} duplicate invoices",
+        "original_count": original_count,
+        "unique_count": len(invoices_storage),
+        "duplicates_removed": removed_count
     }
 
 def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
