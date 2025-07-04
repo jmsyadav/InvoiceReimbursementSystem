@@ -308,9 +308,9 @@ def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
         r'restaurant', r'food', r'meal', r'lunch', r'dinner', r'breakfast', r'cafe', r'coffee', r'tea', r'burger', r'pizza', r'rice', r'curry', r'beverage', r'drink', r'menu', r'table', r'receipt.*food', r'west hollywood', r'manish.*restaurant', r'manish.*resort'
     ]
     
-    # Travel indicators
+    # Travel indicators - prioritize strong travel terms
     travel_indicators = [
-        r'flight', r'airline', r'airport', r'boarding', r'seat', r'aircraft', r'departure', r'arrival', r'terminal', r'gate', r'air.*india', r'ticket.*travel', r'journey', r'passenger.*details', r'eticker', r'pnr', r'booking.*reference', r'travel.*agency', r'bus.*ticket', r'train.*ticket'
+        r'eticker', r'eticket', r'pnr', r'air.*india', r'airasia.*india', r'flight', r'airline', r'airport', r'boarding', r'seat.*number', r'aircraft', r'departure.*time', r'arrival', r'terminal', r'gate', r'ticket.*travel', r'journey', r'passenger.*details.*age.*gender', r'booking.*reference', r'travel.*agency', r'bus.*ticket', r'train.*ticket', r'sleeper', r'ac.*sleeper', r'congratulations.*booked.*reschedulable', r'gst.*no.*b43010gh', r'total.*fare', r'net.*amount', r'taxable.*amount'
     ]
     
     # Cab/Transport indicators
@@ -318,19 +318,20 @@ def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
         r'cab', r'taxi', r'uber', r'ola', r'driver', r'ride', r'pickup', r'drop', r'transport', r'vehicle', r'car.*hire', r'fare', r'trip.*invoice', r'driver.*trip', r'customer.*ride', r'mobile.*number.*89', r'ka.*\d+.*\d+', r'toll.*convenience', r'airport.*charges'
     ]
     
-    # Check content for indicators - prioritize cab over travel since cabs can contain travel terms
+    # Check content for indicators - prioritize travel over cab since travel tickets have unique identifiers
     for indicator in meal_indicators:
         if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
             return "meal"
     
-    # Check cab first since cab invoices often contain travel terms
-    for indicator in cab_indicators:
-        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
-            return "cab"
-    
+    # Check travel first since travel tickets have unique patterns like eticket, pnr, air india
     for indicator in travel_indicators:
         if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
             return "travel"
+    
+    # Check cab after travel to avoid misclassification
+    for indicator in cab_indicators:
+        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
+            return "cab"
     
     return "general"
 
@@ -340,6 +341,10 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     
     # Enhanced patterns based on actual PDF content analysis
     name_patterns = [
+        # For travel tickets: "Passenger Details (Age, Gender)\nSushma, 30, Female" or "Kumar, 45, male"
+        r'Passenger\s*Details.*?\n\s*([A-Z][a-z]+)(?:,\s*\d+,?\s*[A-Za-z]+)?',
+        # For travel tickets with age/gender: "Avinash, 27, Male"
+        r'([A-Z][a-z]+),\s*\d+,\s*[A-Za-z]+',
         # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male"
         r'Passenger\s*Details.*?\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d+',
         # For cab invoices: "CustomerNameAnjaneyaK" (no space between Customer Name and actual name)

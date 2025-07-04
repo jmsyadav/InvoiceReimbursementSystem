@@ -1,0 +1,159 @@
+📄 INV-20250704-000 - Reetu
+
+Employee: Reetu
+
+Date: 2025-07-04
+
+Amount: ₹233.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹233.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-001 - Rekha
+
+Employee: Rekha
+
+Date: 2025-07-04
+
+Amount: ₹167.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹167.0 exceeds the daily office cab allowance limit of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-002 - Seema
+
+Employee: Seema
+
+Date: 2025-07-04
+
+Amount: ₹141.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹141.0 is less than the daily office cab allowance limit of ₹150. According to the policy, all reimbursable expenses must be supported by original receipts and submitted within 30 days of the expense incurred. The invoice contains an original tax invoice and driver trip invoice, meeting the submission requirements.
+
+📄 INV-20250704-003 - Shrutik
+
+Employee: Shrutik
+
+Date: 2025-07-04
+
+Amount: ₹161.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹161.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-004 - Anjaneyak
+
+Employee: Anjaneyak
+
+Date: 2025-07-04
+
+Amount: ₹233.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹233.0 exceeds the daily office cab allowance limit of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-005 - Anjaneyak
+
+Employee: Anjaneyak
+
+Date: 2025-07-04
+
+Amount: ₹333.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹333.0 exceeds the daily office cab allowance limit of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-006 - Sunil
+
+Employee: Sunil
+
+Date: 2025-07-04
+
+Amount: ₹111.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹111.0 is less than the daily office cab allowance limit of ₹150. According to the policy, all reimbursable expenses must be supported by original receipts and submitted within 30 days of the expense incurred. The invoice contains an original tax invoice and driver trip invoice, which meets the submission requirements.
+
+📄 INV-20250704-007 - Chaitra
+
+Employee: Chaitra
+
+Date: 2025-07-04
+
+Amount: ₹444.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹444.0 exceeds the daily office cab allowance limit of ₹150. The reimbursable amount is ₹150.
+
+📄 INV-20250704-008 - Rani
+
+Employee: Rani
+
+Date: 2025-07-04
+
+Amount: ₹150.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹150.0 is within the daily office cab allowance limit of ₹150.0 as per the policy (Section 5.2 Travel Expenses).
+
+📄 INV-20250704-009 - Rajesh
+
+Employee: Rajesh
+
+Date: 2025-07-04
+
+Amount: ₹150.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹150.0 is within the daily office cab allowance limit of ₹150.0 as per the policy (Section 5.2 Travel Expenses).
