@@ -120,19 +120,17 @@ async def analyze_invoices(
                                 # Extract dates and detect fraud
                                 date_fraud_info = extract_dates_and_detect_fraud(pdf_text)
                                 
-                                # Determine reimbursement status based on amount, type, and fraud
+                                # Analyze against HR policy using LLM
                                 if date_fraud_info['fraud_detected']:
                                     status = "Declined"
                                     reason = f"Fraud detected: {date_fraud_info['fraud_reason']}"
-                                elif invoice_type == "meal" and amount > 1000:
-                                    status = "Partially Reimbursed"
-                                    reason = "Exceeds daily meal allowance limit of ₹1000"
-                                elif invoice_type == "travel" and amount > 20000:
-                                    status = "Declined" 
-                                    reason = "Exceeds maximum travel expense limit"
                                 else:
-                                    status = "Fully Reimbursed"
-                                    reason = "Meets all policy requirements"
+                                    # Use LLM to analyze invoice against policy
+                                    policy_analysis = await analyze_invoice_against_policy(
+                                        policy_text, pdf_text, invoice_type, amount, employee_name
+                                    )
+                                    status = policy_analysis['status']
+                                    reason = policy_analysis['reason']
                                 
                                 result = {
                                     "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
@@ -292,15 +290,18 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
             name = match.strip()
             # Clean up and validate
             if name and len(name) > 1:
-                # Remove common noise words
-                noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date', 'number', 'address', 'phone', 'email', 'details', 'age', 'gender']
+                # Remove common noise words and service-related terms
+                noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date', 'number', 'address', 'phone', 'email', 'details', 'age', 'gender', 'care', 'service', 'customer', 'travels', 'booking', 'reservation', 'ticket', 'driver', 'trip', 'ride', 'fare', 'charges', 'tax', 'category', 'mobile', 'pickup', 'drop', 'location', 'point', 'time', 'departure', 'arrival', 'seat', 'operator', 'food', 'restaurant', 'hotel', 'payment', 'mode', 'online', 'cash', 'card']
                 name_words = [word for word in name.split() if word.lower() not in noise_words and len(word) > 1]
                 
                 # Validate name (should have 1-3 words, each at least 2 characters)
                 if 1 <= len(name_words) <= 3 and all(len(word) >= 2 for word in name_words):
-                    # Check if it looks like a real name (alphabetic)
+                    # Check if it looks like a real name (alphabetic, not common words)
                     if all(word.isalpha() for word in name_words):
-                        return ' '.join(name_words).title()
+                        # Additional check for common non-names
+                        combined_name = ' '.join(name_words).lower()
+                        if combined_name not in ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool']:
+                            return ' '.join(name_words).title()
     
     # Enhanced filename extraction as fallback
     clean_filename = filename.replace('.pdf', '').replace('_', ' ').replace('-', ' ')
@@ -313,6 +314,93 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
         return clean_filename.title()
     
     return "Unknown Employee"
+
+async def analyze_invoice_against_policy(policy_text: str, invoice_text: str, invoice_type: str, amount: float, employee_name: str) -> dict:
+    """Analyze invoice against HR policy using LLM"""
+    try:
+        from groq import Groq
+        import os
+        
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        
+        # Create analysis prompt
+        prompt = f"""
+You are an HR policy analyst. Analyze the following invoice against the HR reimbursement policy and determine the reimbursement status.
+
+HR POLICY:
+{policy_text}
+
+INVOICE DETAILS:
+Employee Name: {employee_name}
+Invoice Type: {invoice_type}
+Amount: ₹{amount}
+Invoice Content: {invoice_text[:1000]}...
+
+ANALYSIS INSTRUCTIONS:
+1. Compare the invoice against the HR policy rules
+2. Consider amount limits, expense categories, and approval requirements
+3. Determine reimbursement status: "Fully Reimbursed", "Partially Reimbursed", or "Declined"
+4. Provide a clear reason for the decision
+
+OUTPUT FORMAT (JSON):
+{{
+    "status": "Fully Reimbursed|Partially Reimbursed|Declined",
+    "reason": "Clear explanation of the decision based on policy"
+}}
+
+Respond only with valid JSON.
+"""
+        
+        # Get LLM response
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            model="llama-3.1-8b-instant",
+            temperature=0.1
+        )
+        
+        response_text = chat_completion.choices[0].message.content
+        
+        # Parse JSON response
+        import json
+        try:
+            analysis = json.loads(response_text)
+            return {
+                "status": analysis.get("status", "Declined"),
+                "reason": analysis.get("reason", "Unable to analyze against policy")
+            }
+        except json.JSONDecodeError:
+            # Fallback parsing
+            if "Fully Reimbursed" in response_text:
+                status = "Fully Reimbursed"
+            elif "Partially Reimbursed" in response_text:
+                status = "Partially Reimbursed"
+            else:
+                status = "Declined"
+                
+            return {
+                "status": status,
+                "reason": response_text[:200] + "..." if len(response_text) > 200 else response_text
+            }
+    
+    except Exception as e:
+        # Fallback to simple rule-based analysis
+        if invoice_type == "meal" and amount > 1000:
+            return {
+                "status": "Partially Reimbursed",
+                "reason": "Exceeds daily meal allowance limit of ₹1000"
+            }
+        elif invoice_type == "travel" and amount > 20000:
+            return {
+                "status": "Declined",
+                "reason": "Exceeds maximum travel expense limit"
+            }
+        else:
+            return {
+                "status": "Fully Reimbursed",
+                "reason": "Meets all policy requirements"
+            }
 
 def extract_amount(pdf_text: str, base_amount: float) -> float:
     """Extract amount from PDF content based on actual invoice formats"""
