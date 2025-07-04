@@ -117,8 +117,14 @@ async def analyze_invoices(
                                 # Use extracted amount or fallback to calculated amount
                                 amount = extracted_amount if extracted_amount != base_amount else base_amount + (invoice_counter * 150)
                                 
-                                # Determine reimbursement status based on amount and type
-                                if invoice_type == "meal" and amount > 1000:
+                                # Extract dates and detect fraud
+                                date_fraud_info = extract_dates_and_detect_fraud(pdf_text)
+                                
+                                # Determine reimbursement status based on amount, type, and fraud
+                                if date_fraud_info['fraud_detected']:
+                                    status = "Declined"
+                                    reason = f"Fraud detected: {date_fraud_info['fraud_reason']}"
+                                elif invoice_type == "meal" and amount > 1000:
                                     status = "Partially Reimbursed"
                                     reason = "Exceeds daily meal allowance limit of ₹1000"
                                 elif invoice_type == "travel" and amount > 20000:
@@ -131,18 +137,20 @@ async def analyze_invoices(
                                 result = {
                                     "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
                                     "employee_name": employee_name or f"Employee {invoice_counter + 1}",
-                                    "invoice_date": datetime.now().strftime('%Y-%m-%d'),
+                                    "invoice_date": date_fraud_info['invoice_date'],
                                     "amount": amount,
                                     "reimbursement_status": status,
                                     "reason": reason,
-                                    "fraud_detected": False,
-                                    "fraud_reason": "",
-                                    "invoice_text": f"Invoice content from {pdf_filename}",
+                                    "fraud_detected": date_fraud_info['fraud_detected'],
+                                    "fraud_reason": date_fraud_info['fraud_reason'],
+                                    "invoice_text": pdf_text[:500] + "..." if len(pdf_text) > 500 else pdf_text,
                                     "invoice_data": {
                                         "invoice_type": invoice_type,
                                         "description": f"Invoice from {pdf_filename} in {invoice_file.filename}",
                                         "filename": pdf_filename,
-                                        "source_zip": invoice_file.filename
+                                        "source_zip": invoice_file.filename,
+                                        "reporting_date": date_fraud_info['reporting_date'],
+                                        "dropping_date": date_fraud_info['dropping_date']
                                     }
                                 }
                                 
@@ -258,37 +266,53 @@ async def get_processed_invoices():
     }
 
 def extract_employee_name(pdf_text: str, filename: str) -> str:
-    """Extract employee name from PDF content or filename"""
+    """Extract employee name from PDF content or filename with enhanced patterns"""
     import re
     
-    # Try to extract from PDF content first
+    # Enhanced patterns for employee name extraction
     name_patterns = [
-        r'Employee[:\s]+([A-Za-z\s]+)',
-        r'Name[:\s]+([A-Za-z\s]+)',
-        r'Passenger[:\s]+([A-Za-z\s]+)',
-        r'Customer[:\s]+([A-Za-z\s]+)',
-        r'Mr\.?\s+([A-Za-z\s]+)',
-        r'Ms\.?\s+([A-Za-z\s]+)',
-        r'([A-Z][a-z]+\s+[A-Z][a-z]+)'  # Two capitalized words
+        r'Customer\s*Name[:\s]*([A-Za-z\s\.]+)',
+        r'Passenger\s*Details[:\s]*([A-Za-z\s\.]+)',
+        r'Passenger[:\s]*([A-Za-z\s\.]+)',
+        r'Customer[:\s]*([A-Za-z\s\.]+)',
+        r'Employee[:\s]*([A-Za-z\s\.]+)',
+        r'Name[:\s]*([A-Za-z\s\.]+)',
+        r'Mr\.?\s*([A-Za-z\s\.]+)',
+        r'Ms\.?\s*([A-Za-z\s\.]+)',
+        r'Mrs\.?\s*([A-Za-z\s\.]+)',
+        r'Traveler[:\s]*([A-Za-z\s\.]+)',
+        r'Guest[:\s]*([A-Za-z\s\.]+)',
+        # Pattern for names in format: SURNAME FIRSTNAME
+        r'\b([A-Z]{2,}\s+[A-Z][a-z]+)',
+        # Pattern for normal name format
+        r'\b([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b'
     ]
     
     for pattern in name_patterns:
-        match = re.search(pattern, pdf_text, re.IGNORECASE)
-        if match:
-            name = match.group(1).strip()
-            # Clean up common noise words
-            noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date']
-            name_words = [word for word in name.split() if word.lower() not in noise_words]
-            if len(name_words) >= 1 and len(name_words) <= 3:
-                return ' '.join(name_words).title()
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
+        for match in matches:
+            name = match.strip()
+            # Clean up common noise words and validate
+            noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date', 'number', 'address', 'phone', 'email']
+            name_words = [word for word in name.split() if word.lower() not in noise_words and len(word) > 1]
+            
+            # Validate name (should have 1-3 words, each at least 2 characters)
+            if 1 <= len(name_words) <= 3 and all(len(word) >= 2 for word in name_words):
+                # Check if it looks like a real name (not numbers or codes)
+                if all(word.isalpha() or '.' in word for word in name_words):
+                    return ' '.join(name_words).title()
     
-    # Fallback to filename extraction
+    # Enhanced filename extraction
     clean_filename = filename.replace('.pdf', '').replace('_', ' ').replace('-', ' ')
-    # Remove common file prefixes/suffixes
-    clean_filename = re.sub(r'(invoice|bill|receipt|book|template)', '', clean_filename, flags=re.IGNORECASE)
+    # Remove common prefixes/suffixes more comprehensively
+    clean_filename = re.sub(r'(invoice|bill|receipt|book|template|\d+)', '', clean_filename, flags=re.IGNORECASE)
     clean_filename = clean_filename.strip()
     
-    return clean_filename.title() if clean_filename else f"Employee_{filename[:10]}"
+    # If filename extraction yields a reasonable name
+    if clean_filename and len(clean_filename.split()) <= 3:
+        return clean_filename.title()
+    
+    return f"Unknown Employee"
 
 def extract_amount(pdf_text: str, base_amount: float) -> float:
     """Extract amount from PDF content"""
@@ -322,6 +346,92 @@ def extract_amount(pdf_text: str, base_amount: float) -> float:
     
     # Return base amount if no valid amount found
     return base_amount
+
+def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
+    """Extract reporting date and dropping date, detect fraud based on date inconsistencies"""
+    import re
+    from datetime import datetime, timedelta
+    
+    # Enhanced date patterns for Indian date formats
+    date_patterns = [
+        # Reporting Date patterns
+        (r'Reporting\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
+        (r'Report\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
+        (r'Journey\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
+        (r'Travel\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
+        (r'Departure[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
+        
+        # Dropping Point Date patterns
+        (r'Dropping\s*Point\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'dropping'),
+        (r'Drop\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'dropping'),
+        (r'Arrival[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'dropping'),
+        (r'Return\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'dropping'),
+        (r'End\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'dropping'),
+        
+        # General date patterns
+        (r'Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'general'),
+        (r'(\d{1,2}[-/]\d{1,2}[-/]\d{4})', 'general'),
+    ]
+    
+    reporting_date = None
+    dropping_date = None
+    invoice_date = None
+    
+    def parse_date(date_str):
+        """Parse date string to datetime object"""
+        try:
+            # Try different date formats
+            for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%d/%m/%y', '%d-%m-%y', '%m/%d/%Y', '%m-%d-%Y']:
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    continue
+            return None
+        except:
+            return None
+    
+    # Extract dates using patterns
+    for pattern, date_type in date_patterns:
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
+        for match in matches:
+            parsed_date = parse_date(match)
+            if parsed_date:
+                if date_type == 'reporting' and not reporting_date:
+                    reporting_date = parsed_date
+                elif date_type == 'dropping' and not dropping_date:
+                    dropping_date = parsed_date
+                elif date_type == 'general' and not invoice_date:
+                    invoice_date = parsed_date
+    
+    # Use reporting date as official invoice date, fallback to general date
+    official_date = reporting_date or invoice_date or datetime.now()
+    
+    # Fraud detection logic
+    fraud_detected = False
+    fraud_reason = ""
+    
+    if reporting_date and dropping_date:
+        # Check if dates are the same
+        if reporting_date.date() != dropping_date.date():
+            # Check if dropping date is more than 1 day after reporting date
+            date_diff = (dropping_date - reporting_date).days
+            if date_diff > 1:
+                fraud_detected = True
+                fraud_reason = f"Dropping date ({dropping_date.strftime('%d/%m/%Y')}) is {date_diff} days after reporting date ({reporting_date.strftime('%d/%m/%Y')})"
+            elif date_diff < 0:
+                fraud_detected = True
+                fraud_reason = f"Dropping date ({dropping_date.strftime('%d/%m/%Y')}) is before reporting date ({reporting_date.strftime('%d/%m/%Y')})"
+            else:
+                # Date difference is exactly 1 day, which might be acceptable for overnight travel
+                fraud_reason = f"Dropping date is 1 day after reporting date - overnight travel"
+    
+    return {
+        'invoice_date': official_date.strftime('%Y-%m-%d'),
+        'reporting_date': reporting_date.strftime('%Y-%m-%d') if reporting_date else None,
+        'dropping_date': dropping_date.strftime('%Y-%m-%d') if dropping_date else None,
+        'fraud_detected': fraud_detected,
+        'fraud_reason': fraud_reason
+    }
 
 if __name__ == "__main__":
     import uvicorn
