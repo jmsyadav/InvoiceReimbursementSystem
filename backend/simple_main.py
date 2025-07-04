@@ -95,20 +95,34 @@ def extract_filters_from_natural_language(query: str) -> Dict[str, Any]:
     filters = {}
     query_lower = query.lower()
     
-    # Extract employee names (common patterns)
+    # Extract employee names (enhanced patterns)
     employee_patterns = [
+        r"invoices?\s+(?:of|for|from|by)\s+(\w+)",
+        r"all\s+invoices?\s+(?:of|for|from|by)\s+(\w+)", 
+        r"show\s+(?:me\s+)?(?:all\s+)?invoices?\s+(?:of|for|from|by)\s+(\w+)",
         r"employee\s+(\w+)",
-        r"for\s+(\w+)",
-        r"by\s+(\w+)",
         r"(\w+)'s\s+invoice",
-        r"(\w+)\s+submitted"
+        r"(\w+)\s+submitted",
+        r"for\s+(\w+)"
     ]
+    
+    # Known employee names to match against
+    known_employees = ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash']
     
     for pattern in employee_patterns:
         match = re.search(pattern, query_lower)
         if match:
-            filters["employee_name"] = match.group(1).title()
-            break
+            employee_name = match.group(1).lower()
+            if employee_name in known_employees:
+                filters["employee_name"] = employee_name.title()
+                break
+    
+    # Direct name matching if no pattern found
+    if "employee_name" not in filters:
+        for name in known_employees:
+            if name in query_lower:
+                filters["employee_name"] = name.title()
+                break
     
     # Extract status
     if "declined" in query_lower or "rejected" in query_lower:
@@ -836,7 +850,9 @@ async def chatbot_query(request: ChatbotRequest):
             filters.update(request.filters)
         
         # Perform vector search on invoice data using Qdrant
-        relevant_invoices = await search_invoices_in_qdrant(query, filters, limit=5)
+        # For employee-specific queries, increase limit to get all invoices
+        search_limit = 20 if any(name in query.lower() for name in ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash']) else 5
+        relevant_invoices = await search_invoices_in_qdrant(query, filters, limit=search_limit)
         
         # Build context from retrieved invoices
         context = build_context_from_invoices(relevant_invoices)
