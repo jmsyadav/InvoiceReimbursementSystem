@@ -106,6 +106,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 ## Changelog
 
 - July 04, 2025. Initial setup
+- July 04, 2025. Fixed critical fraud detection bug - improved travel date validation to properly identify impossible travel dates while allowing legitimate travel scenarios
 
 ## User Preferences
 

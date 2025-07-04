@@ -674,21 +674,23 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
     
     # Enhanced date patterns based on actual invoice formats
     date_patterns = [
-        # Bus ticket: "Reporting Date\n13:12" and "21 Sep 2024\nDropping point Date"
-        (r'Reporting\s*Date\s*\n\s*\d{1,2}:\d{2}', 'reporting_marker'),
+        # Travel ticket patterns - specific patterns first
+        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Reporting\s*Date', 'reporting'),
         (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Dropping\s*point\s*Date', 'dropping'),
         (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Departure\s*time', 'reporting'),
+        # More flexible travel patterns
+        (r'Reporting\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'reporting'),
+        (r'Dropping\s*point\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'dropping'),
+        # Travel ticket route patterns
+        (r'[A-Za-z]+\s*To\s*[A-Za-z]+\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
         # Cab invoice: "Invoice Date 17 May 2024" or "InvoiceDate17May2024"
         (r'Invoice\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
         (r'InvoiceDate(\d{1,2}[A-Za-z]{3}\d{4})', 'general'),
         # Meal invoice: "Date: Dec 23, 2024 18:24" and "Date: 26 Dec 2024"
         (r'Date:\s*([A-Za-z]{3}\s+\d{1,2},?\s+\d{4})', 'general'),
         (r'Date:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
-        # Travel ticket: "BangaloreToSurat25 Jul 2024", "ChennaiToSurat25 Jul 2024"
-        (r'[A-Za-z]+To[A-Za-z]+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
-        # Travel ticket: standalone date formats in headers
-        (r'^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})$', 'general'),
-        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*$', 'general'),
+        # Generic date patterns (last resort)
+        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
         
         # Standard date patterns as fallback
         (r'Reporting\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
@@ -767,27 +769,52 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
                     elif date_type == 'general' and not invoice_date:
                         invoice_date = parsed_date
     
-    # Use reporting date as official invoice date, fallback to general date
-    official_date = reporting_date or invoice_date or datetime.now()
+    # Use reporting date as official invoice date, fallback to general date, then today as last resort
+    official_date = reporting_date or invoice_date
+    if not official_date:
+        # Only use today's date if no dates were found at all
+        print(f"Warning: No date found in PDF, using today's date as fallback")
+        official_date = datetime.now()
     
-    # Fraud detection logic
+    # Fraud detection logic for travel invoices
     fraud_detected = False
     fraud_reason = ""
     
     if reporting_date and dropping_date:
-        # Check if dates are the same
-        if reporting_date.date() != dropping_date.date():
-            # Check if dropping date is more than 1 day after reporting date
-            date_diff = (dropping_date - reporting_date).days
-            if date_diff > 1:
-                fraud_detected = True
-                fraud_reason = f"Dropping date ({dropping_date.strftime('%d/%m/%Y')}) is {date_diff} days after reporting date ({reporting_date.strftime('%d/%m/%Y')})"
-            elif date_diff < 0:
-                fraud_detected = True
-                fraud_reason = f"Dropping date ({dropping_date.strftime('%d/%m/%Y')}) is before reporting date ({reporting_date.strftime('%d/%m/%Y')})"
-            else:
-                # Date difference is exactly 1 day, which might be acceptable for overnight travel
-                fraud_reason = f"Dropping date is 1 day after reporting date - overnight travel"
+        # Calculate date difference
+        date_diff = (dropping_date - reporting_date).days
+        
+        # For travel invoices, we need to be more flexible with date validation
+        # The key fraud indicators are:
+        # 1. Dates that are too far apart (unrealistic travel duration)
+        # 2. Very old dates (potential duplicate claims)
+        # 3. Future dates beyond reasonable booking window
+        
+        current_date = datetime.now()
+        
+        # Check for impossible travel dates (arrival before departure)
+        if date_diff < 0:
+            fraud_detected = True
+            fraud_reason = f"IMPOSSIBLE TRAVEL: Arrival date ({dropping_date.strftime('%d/%m/%Y')}) is {abs(date_diff)} days before departure date ({reporting_date.strftime('%d/%m/%Y')})"
+        
+        # Check for unrealistic time gaps (more than 30 days between departure and arrival)
+        elif date_diff > 30:
+            fraud_detected = True
+            fraud_reason = f"SUSPICIOUS TRAVEL: Journey duration of {date_diff} days from {reporting_date.strftime('%d/%m/%Y')} to {dropping_date.strftime('%d/%m/%Y')} exceeds reasonable travel time"
+        
+        # Check for very old invoices (more than 1 year old)
+        elif (current_date - reporting_date).days > 365:
+            fraud_detected = True
+            fraud_reason = f"Invoice is too old - reporting date ({reporting_date.strftime('%d/%m/%Y')}) is more than 1 year ago"
+        
+        # Check for future dates beyond reasonable booking window (more than 6 months in future)
+        elif (reporting_date - current_date).days > 180:
+            fraud_detected = True
+            fraud_reason = f"Reporting date ({reporting_date.strftime('%d/%m/%Y')}) is too far in the future"
+        
+        # If dates are reasonable, no fraud detected
+        else:
+            fraud_reason = f"Travel dates are within acceptable range"
     
     return {
         'invoice_date': official_date.strftime('%Y-%m-%d'),
