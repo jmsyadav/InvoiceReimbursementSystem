@@ -308,9 +308,9 @@ def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
         r'restaurant', r'food', r'meal', r'lunch', r'dinner', r'breakfast', r'cafe', r'coffee', r'tea', r'burger', r'pizza', r'rice', r'curry', r'beverage', r'drink', r'menu', r'table', r'receipt.*food', r'west hollywood', r'manish.*restaurant', r'manish.*resort'
     ]
     
-    # Travel indicators - prioritize strong travel terms
+    # Travel indicators - very specific to avoid false positives with cab invoices
     travel_indicators = [
-        r'eticker', r'eticket', r'pnr', r'air.*india', r'airasia.*india', r'flight', r'airline', r'airport', r'boarding', r'seat.*number', r'aircraft', r'departure.*time', r'arrival', r'terminal', r'gate', r'ticket.*travel', r'journey', r'passenger.*details.*age.*gender', r'booking.*reference', r'travel.*agency', r'bus.*ticket', r'train.*ticket', r'sleeper', r'ac.*sleeper', r'congratulations.*booked.*reschedulable', r'gst.*no.*b43010gh', r'total.*fare', r'net.*amount', r'taxable.*amount'
+        r'eticker', r'eticket', r'pnr.*no', r'air.*india', r'airasia.*india', r'flight', r'airline', r'aircraft', r'sleeper', r'ac.*sleeper', r'congratulations.*booked.*reschedulable', r'gst.*no.*b43010gh195260i008931', r'passenger.*details.*age.*gender', r'boarding.*point.*details', r'dropping.*point.*details', r'reporting.*date', r'dropping.*point.*date', r'total.*fare.*₹', r'net.*amount.*₹.*\d+\.\d+', r'taxable.*amount.*₹.*\d+\.\d+'
     ]
     
     # Cab/Transport indicators
@@ -602,6 +602,11 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
         # Meal invoice: "Date: Dec 23, 2024 18:24" and "Date: 26 Dec 2024"
         (r'Date:\s*([A-Za-z]{3}\s+\d{1,2},?\s+\d{4})', 'general'),
         (r'Date:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
+        # Travel ticket: "BangaloreToSurat25 Jul 2024", "ChennaiToSurat25 Jul 2024"
+        (r'[A-Za-z]+To[A-Za-z]+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
+        # Travel ticket: standalone date formats in headers
+        (r'^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})$', 'general'),
+        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*$', 'general'),
         
         # Standard date patterns as fallback
         (r'Reporting\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
