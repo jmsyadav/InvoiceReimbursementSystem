@@ -59,9 +59,28 @@ async def analyze_invoices(
         # Process the uploaded files
         results = []
         
-        # Read policy file
+        # Read and extract policy file (PDF)
         policy_content = await policy_file.read()
-        policy_text = policy_content.decode('utf-8', errors='ignore')
+        
+        # Extract text from policy PDF
+        policy_text = ""
+        try:
+            import pdfplumber
+            import io
+            
+            with pdfplumber.open(io.BytesIO(policy_content)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        policy_text += page_text + "\n"
+        except Exception as e:
+            # Fallback: try to decode as text if PDF extraction fails
+            try:
+                policy_text = policy_content.decode('utf-8', errors='ignore')
+            except:
+                policy_text = "Unable to extract policy content"
+        
+        print(f"Extracted policy text length: {len(policy_text)}")  # Debug log
         
         # Process each invoice file
         invoice_counter = 0
@@ -126,11 +145,13 @@ async def analyze_invoices(
                                     reason = f"Fraud detected: {date_fraud_info['fraud_reason']}"
                                 else:
                                     # Use LLM to analyze invoice against policy
+                                    print(f"Calling LLM analysis for {employee_name}, amount: {amount}, type: {invoice_type}")  # Debug
                                     policy_analysis = await analyze_invoice_against_policy(
                                         policy_text, pdf_text, invoice_type, amount, employee_name
                                     )
                                     status = policy_analysis['status']
                                     reason = policy_analysis['reason']
+                                    print(f"LLM analysis result: {status} - {reason}")  # Debug
                                 
                                 result = {
                                     "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
@@ -267,20 +288,21 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     """Extract employee name from PDF content or filename with enhanced patterns"""
     import re
     
-    # Enhanced patterns based on actual invoice formats with more specific matching
+    # Enhanced patterns based on actual PDF content analysis
     name_patterns = [
-        # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male" - be very specific
-        r'Passenger\s*Details[^a-zA-Z]*\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})\s+\d+,?\s*[a-zA-Z]*',
-        # For cab invoices: "Customer Name Anjaneyaa K" - ensure it's after "Customer Name"
-        r'Customer\s*Name\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        # More restrictive general patterns - must start with capital letter
-        r'Customer:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        r'Passenger:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        r'Employee:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        # Title patterns with word boundaries
-        r'\bMr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        r'\bMs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
-        r'\bMrs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})(?:\s|$)',
+        # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male"
+        r'Passenger\s*Details.*?\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d+',
+        # For cab invoices: "CustomerNameAnjaneyaK" (no space between Customer Name and actual name)
+        r'CustomerName([A-Z][a-z]+(?:[A-Z][a-z]+)?)',
+        # Standard patterns with spacing
+        r'Customer\s*Name\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        r'Customer\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        r'Passenger\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        r'Employee\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        # Title patterns
+        r'\bMr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        r'\bMs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        r'\bMrs\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
     ]
     
     for pattern in name_patterns:
@@ -309,8 +331,11 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
                         if any(len(word) > 15 for word in name_words):
                             continue
                             
-                        # Check for common non-names and policy terms
-                        if combined_name not in ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool', 'lta', 'leave', 'travel', 'allowance', 'policy', 'baggage', 'allowed', 'carry', 'bag', 'upto', 'kilograms', 'weight', 'limit', 'excess', 'free', 'complimentary']:
+                        # Check for common non-names, abbreviations, and policy terms
+                        invalid_names = ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool', 'lta', 'hra', 'pf', 'esi', 'leave', 'travel', 'allowance', 'policy', 'baggage', 'allowed', 'carry', 'bag', 'upto', 'kilograms', 'weight', 'limit', 'excess', 'free', 'complimentary', 'care', 'help', 'support', 'contact', 'phone', 'mobile', 'email', 'address', 'city', 'state', 'country', 'pin', 'code', 'gst', 'pan', 'tan', 'cin', 'reg', 'no', 'id', 'ref', 'invoice', 'receipt', 'bill', 'ticket']
+                        
+                        # Also reject single characters and common abbreviations
+                        if combined_name not in invalid_names and not any(len(word) <= 2 for word in name_words):
                             return ' '.join(name_words).title()
     
     # Enhanced filename extraction as fallback
