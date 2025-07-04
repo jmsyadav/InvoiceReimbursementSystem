@@ -318,18 +318,19 @@ def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
         r'cab', r'taxi', r'uber', r'ola', r'driver', r'ride', r'pickup', r'drop', r'transport', r'vehicle', r'car.*hire', r'fare', r'trip.*invoice', r'driver.*trip', r'customer.*ride', r'mobile.*number.*89', r'ka.*\d+.*\d+', r'toll.*convenience', r'airport.*charges'
     ]
     
-    # Check content for indicators
+    # Check content for indicators - prioritize cab over travel since cabs can contain travel terms
     for indicator in meal_indicators:
         if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
             return "meal"
     
-    for indicator in travel_indicators:
-        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
-            return "travel"
-    
+    # Check cab first since cab invoices often contain travel terms
     for indicator in cab_indicators:
         if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
             return "cab"
+    
+    for indicator in travel_indicators:
+        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
+            return "travel"
     
     return "general"
 
@@ -441,25 +442,29 @@ CRITICAL ANALYSIS RULES:
    - CAB/TAXI expenses: ₹150 daily office cab allowance  
    - TRAVEL expenses: ₹2,000 per trip limit
 
-MATHEMATICAL COMPARISON FOR ₹{amount} ({invoice_type} category):
-   - If {invoice_type} is "cab": Compare ₹{amount} with ₹150
-     • ₹{amount} ≤ ₹150 → Fully Reimbursed
-     • ₹{amount} > ₹150 → Partially Reimbursed (₹150 only)
-   - If {invoice_type} is "travel": Compare ₹{amount} with ₹2,000
-     • ₹{amount} ≤ ₹2,000 → Fully Reimbursed  
-     • ₹{amount} > ₹2,000 → Partially Reimbursed (₹2,000 only)
-   - If {invoice_type} is "meal": Compare ₹{amount} with ₹200
-     • ₹{amount} ≤ ₹200 → Fully Reimbursed
-     • ₹{amount} > ₹200 → Partially Reimbursed (₹200 only)
+CRITICAL MATHEMATICAL CHECK FOR ₹{amount} ({invoice_type} category):
+   - Current Invoice Amount: ₹{amount}
+   - Policy Limit: {"₹150 (cab allowance)" if invoice_type == "cab" else "₹2,000 (travel)" if invoice_type == "travel" else "₹200 (meal)"}
+   
+   MATHEMATICAL COMPARISON:
+   - Is ₹{amount} greater than the limit? {"YES" if (invoice_type == "cab" and amount > 150) or (invoice_type == "travel" and amount > 2000) or (invoice_type == "meal" and amount > 200) else "NO"}
+   - Decision: {"Partially Reimbursed" if (invoice_type == "cab" and amount > 150) or (invoice_type == "travel" and amount > 2000) or (invoice_type == "meal" and amount > 200) else "Fully Reimbursed"}
+   - Reimbursable Amount: {"₹150" if invoice_type == "cab" and amount > 150 else "₹2,000" if invoice_type == "travel" and amount > 2000 else "₹200" if invoice_type == "meal" and amount > 200 else f"₹{amount}"}
 
-3. RESTRICTED ITEMS: Decline if contains alcohol, personal items, etc.
+3. RESTRICTED ITEMS CHECK:
+   - ALCOHOL DETECTION: Check if invoice contains alcoholic beverages
+   - Common alcohol terms: "whisky", "wine", "beer", "alcohol", "liquor", "rum", "vodka", "gin", "brandy"
+   - If alcohol found → Status = "Declined", Reason = "Contains alcoholic beverages which are not reimbursable per policy"
+   - Policy states: "Alcoholic beverages are not reimbursable"
+
 4. SUBMISSION REQUIREMENTS: Check if proper documentation is provided
 
 ANALYSIS STEPS:
-1. Identify the expense category: {invoice_type}
-2. Apply CORRECT policy limit based on category
-3. Compare ₹{amount} with the correct limit using accurate math
-4. Check for restricted items in invoice content  
+1. ALCOHOL CHECK: Search invoice content for alcohol terms (whisky, wine, beer, alcohol, liquor, rum, vodka, gin, brandy, stag)
+   - If found → Status = "Declined", Reason = "Contains alcoholic beverages which are not reimbursable per policy"
+2. Identify the expense category: {invoice_type}
+3. Apply CORRECT policy limit based on category
+4. Compare ₹{amount} with the correct limit using accurate math
 5. Determine final status and provide clear reasoning with correct calculations
 
 OUTPUT FORMAT (JSON):
