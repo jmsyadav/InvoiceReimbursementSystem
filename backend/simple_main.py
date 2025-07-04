@@ -913,6 +913,15 @@ ANALYSIS STEPS:
    - Example: "2 Royal Stag Whisky 150.00 300.00" + "2 Biriyani 200.00 400.00" = ₹770 total
    - Alcohol amount: ₹300, Eligible meal amount: ₹470
    - Since ₹470 > ₹200 meal limit → Partially Reimbursed ₹200
+   
+   CRITICAL MATH RULE FOR ALCOHOL:
+   - If eligible meal amount (after removing alcohol) > ₹200 → Status = "Partially Reimbursed" for ₹200
+   - If eligible meal amount (after removing alcohol) ≤ ₹200 → Status = "Fully Reimbursed" for eligible amount
+   - NEVER use "Declined" for alcohol invoices unless eligible amount is ≤ 0
+   
+   AVINASH EXAMPLE FIX: ₹1100 total - ₹750 alcohol = ₹350 eligible
+   - Since ₹350 > ₹200 → Correct status = "Partially Reimbursed" for ₹200
+   - NOT "Declined" as previously calculated incorrectly
 2. Identify the expense category: {invoice_type}
 3. Apply CORRECT policy limit based on category
 4. Compare eligible amount with policy limit using accurate math
