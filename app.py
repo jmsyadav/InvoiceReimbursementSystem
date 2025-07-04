@@ -79,7 +79,6 @@ def main():
     
     # Footer
     st.markdown("---")
-    st.markdown("*Invoice Reimbursement System powered by AI*")
 
 if __name__ == "__main__":
     main()
