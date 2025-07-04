@@ -45,21 +45,24 @@ class APIClient:
             if not self._wait_for_backend():
                 return {"success": False, "message": "Backend service is not available. Please try again later."}
             
-            # Prepare files for upload
+            # Prepare files for upload using tuples for multiple files with same key
             files = [
                 ("policy_file", (policy_file.name, policy_file.getvalue(), "application/pdf"))
             ]
             
-            # Add invoice files
+            # Add multiple invoice files using the same key name
             for invoice_file in invoice_files:
-                files.append(("invoice_files", (invoice_file.name, invoice_file.getvalue(), 
-                                             "application/pdf" if invoice_file.name.endswith('.pdf') else "application/zip")))
+                files.append((
+                    "invoice_files", 
+                    (invoice_file.name, invoice_file.getvalue(), 
+                     "application/pdf" if invoice_file.name.endswith('.pdf') else "application/zip")
+                ))
             
-            # Make API request
-            response = self.session.post(
+            # Make API request using requests directly (not session) to handle multipart properly
+            response = requests.post(
                 f"{self.base_url}/analyze-invoices",
                 files=files,
-                timeout=300  # 5 minutes timeout for processing
+                timeout=300
             )
             
             if response.status_code == 200:
