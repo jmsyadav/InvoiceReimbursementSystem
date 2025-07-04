@@ -81,6 +81,7 @@ async def analyze_invoices(
                 policy_text = "Unable to extract policy content"
         
         print(f"Extracted policy text length: {len(policy_text)}")  # Debug log
+        print(f"Policy preview: {policy_text[:200]}...")  # Debug - first 200 chars
         
         # Process each invoice file
         invoice_counter = 0
@@ -130,11 +131,13 @@ async def analyze_invoices(
                                 
                                 # Extract employee name from PDF content or filename
                                 employee_name = extract_employee_name(pdf_text, pdf_filename)
+                                print(f"Name extraction result for {pdf_filename}: '{employee_name}'")  # Debug
                                 
                                 # Refine invoice type based on PDF content
                                 refined_type = detect_invoice_type_from_content(pdf_text, pdf_filename)
                                 if refined_type != "general":
                                     invoice_type = refined_type
+                                print(f"Invoice type detection: {pdf_filename} -> {refined_type} -> final: {invoice_type}")  # Debug
                                 
                                 # Extract amount from PDF content
                                 extracted_amount = extract_amount(pdf_text, base_amount)
@@ -337,8 +340,8 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
         r'Passenger\s*Details.*?\n\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\d+',
         # For cab invoices: "CustomerNameAnjaneyaK" (no space between Customer Name and actual name)
         r'CustomerName([A-Z][a-z]+(?:[A-Z][a-z]+)?)',
-        # Standard patterns with spacing
-        r'Customer\s*Name\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+        # Standard patterns with spacing - stop at first non-letter
+        r'Customer\s*Name\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(?:\s|$)',
         r'Customer\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         r'Passenger\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
         r'Employee\s*:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
@@ -422,20 +425,27 @@ Invoice Content: {invoice_text[:1000]}...
 
 CRITICAL ANALYSIS RULES:
 1. MATHEMATICAL ACCURACY: Always compare numbers correctly:
-   - If ₹{amount} ≤ policy limit → Status = "Fully Reimbursed"
-   - If ₹{amount} > policy limit → Status = "Partially Reimbursed" (specify exact amount)
+   - If ₹{amount} ≤ policy limit → Status = "Fully Reimbursed"  
+   - If ₹{amount} > policy limit → Status = "Partially Reimbursed" (specify exact reimbursable amount)
    - Example: ₹88 is LESS than ₹200, so it should be "Fully Reimbursed"
 
-2. EXPENSE CATEGORIES: Check if expense type is allowed by policy
+2. EXPENSE CATEGORY LIMITS (CRITICAL - Apply correct limits):
+   - MEAL expenses: ₹200 per meal limit
+   - CAB/TAXI expenses: ₹150 daily office cab allowance  
+   - TRAVEL expenses: ₹2,000 per trip limit
+   - If invoice type is "cab" and amount > ₹150 → Partially Reimbursed for ₹150
+   - If invoice type is "travel" and amount > ₹2,000 → Partially Reimbursed for ₹2,000
+   - If invoice type is "meal" and amount > ₹200 → Partially Reimbursed for ₹200
+
 3. RESTRICTED ITEMS: Decline if contains alcohol, personal items, etc.
 4. SUBMISSION REQUIREMENTS: Check if proper documentation is provided
 
 ANALYSIS STEPS:
-1. Identify the expense category (travel, meal, cab, etc.)
-2. Check policy limits for that category
-3. Compare ₹{amount} with the limit using correct math
-4. Check for restricted items in invoice content
-5. Determine final status and provide clear reasoning
+1. Identify the expense category: {invoice_type}
+2. Apply CORRECT policy limit based on category
+3. Compare ₹{amount} with the correct limit using accurate math
+4. Check for restricted items in invoice content  
+5. Determine final status and provide clear reasoning with correct calculations
 
 OUTPUT FORMAT (JSON):
 {{
