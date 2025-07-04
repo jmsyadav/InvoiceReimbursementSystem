@@ -1,12 +1,15 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 import tempfile
 import shutil
 from pydantic import BaseModel
 from datetime import datetime
 import json
+import math
+import re
+import uuid
 
 app = FastAPI(title="Invoice Reimbursement System API", version="1.0.0")
 
@@ -18,6 +21,255 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global storage for RAG chatbot
+invoices_storage = []
+conversation_history = {}
+vector_embeddings = {}
+
+# RAG Helper Functions
+def extract_filters_from_natural_language(query: str) -> Dict[str, Any]:
+    """Extract metadata filters from natural language query"""
+    filters = {}
+    query_lower = query.lower()
+    
+    # Extract employee names (common patterns)
+    employee_patterns = [
+        r"employee\s+(\w+)",
+        r"for\s+(\w+)",
+        r"by\s+(\w+)",
+        r"(\w+)'s\s+invoice",
+        r"(\w+)\s+submitted"
+    ]
+    
+    for pattern in employee_patterns:
+        match = re.search(pattern, query_lower)
+        if match:
+            filters["employee_name"] = match.group(1).title()
+            break
+    
+    # Extract status
+    if "declined" in query_lower or "rejected" in query_lower:
+        filters["reimbursement_status"] = "Declined"
+    elif "approved" in query_lower or "reimbursed" in query_lower:
+        filters["reimbursement_status"] = "Fully Reimbursed"
+    elif "partial" in query_lower:
+        filters["reimbursement_status"] = "Partially Reimbursed"
+    
+    # Extract fraud detection
+    if "fraud" in query_lower or "suspicious" in query_lower:
+        filters["fraud_detected"] = True
+    
+    # Extract invoice types
+    if "cab" in query_lower or "taxi" in query_lower:
+        filters["invoice_type"] = "cab"
+    elif "travel" in query_lower or "flight" in query_lower:
+        filters["invoice_type"] = "travel" 
+    elif "meal" in query_lower or "food" in query_lower:
+        filters["invoice_type"] = "meal"
+    
+    # Extract amount ranges
+    amount_match = re.search(r"above\s+(\d+)", query_lower)
+    if amount_match:
+        filters["amount_min"] = float(amount_match.group(1))
+    
+    amount_match = re.search(r"below\s+(\d+)", query_lower)
+    if amount_match:
+        filters["amount_max"] = float(amount_match.group(1))
+    
+    return filters
+
+def create_basic_embedding(text: str) -> List[float]:
+    """Create a basic embedding using simple text features"""
+    words = text.lower().split()
+    
+    # Create a simple feature vector based on keywords
+    features = [0.0] * 50  # 50-dimensional vector
+    
+    # Feature extraction based on keywords
+    keywords = {
+        "declined": 0, "approved": 1, "reimbursed": 2, "fraud": 3,
+        "cab": 4, "travel": 5, "meal": 6, "employee": 7,
+        "amount": 8, "invoice": 9, "policy": 10, "reason": 11
+    }
+    
+    for word in words:
+        if word in keywords:
+            features[keywords[word]] += 1.0
+    
+    # Add length-based features
+    features[20] = len(words)
+    features[21] = len(text)
+    
+    # Normalize
+    magnitude = math.sqrt(sum(f * f for f in features))
+    if magnitude > 0:
+        features = [f / magnitude for f in features]
+    
+    return features
+
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """Calculate cosine similarity between two vectors"""
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+    magnitude1 = math.sqrt(sum(a * a for a in vec1))
+    magnitude2 = math.sqrt(sum(b * b for b in vec2))
+    
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+    
+    return dot_product / (magnitude1 * magnitude2)
+
+def search_invoices_by_similarity(query: str, filters: Dict[str, Any], limit: int = 5) -> List[Dict[str, Any]]:
+    """Search invoices using vector similarity and metadata filtering"""
+    # Create query embedding
+    query_embedding = create_basic_embedding(query)
+    
+    # Filter invoices by metadata first
+    filtered_invoices = []
+    for invoice in invoices_storage:
+        # Apply metadata filters
+        matches = True
+        
+        if "employee_name" in filters:
+            if invoice.get("employee_name", "").lower() != filters["employee_name"].lower():
+                matches = False
+        
+        if "reimbursement_status" in filters:
+            if invoice.get("reimbursement_status") != filters["reimbursement_status"]:
+                matches = False
+        
+        if "fraud_detected" in filters:
+            if invoice.get("fraud_detected") != filters["fraud_detected"]:
+                matches = False
+        
+        if "invoice_type" in filters:
+            if invoice.get("invoice_type") != filters["invoice_type"]:
+                matches = False
+        
+        if "amount_min" in filters:
+            if invoice.get("amount", 0) < filters["amount_min"]:
+                matches = False
+        
+        if "amount_max" in filters:
+            if invoice.get("amount", 0) > filters["amount_max"]:
+                matches = False
+        
+        if matches:
+            filtered_invoices.append(invoice)
+    
+    # Calculate similarity scores
+    scored_invoices = []
+    for invoice in filtered_invoices:
+        # Create invoice embedding
+        invoice_text = f"{invoice.get('employee_name', '')} {invoice.get('reimbursement_status', '')} {invoice.get('reason', '')} {invoice.get('invoice_type', '')}"
+        invoice_embedding = create_basic_embedding(invoice_text)
+        
+        # Calculate similarity
+        similarity = cosine_similarity(query_embedding, invoice_embedding)
+        
+        invoice_with_score = invoice.copy()
+        invoice_with_score["score"] = similarity
+        scored_invoices.append(invoice_with_score)
+    
+    # Sort by similarity score and return top results
+    scored_invoices.sort(key=lambda x: x["score"], reverse=True)
+    return scored_invoices[:limit]
+
+def build_context_from_invoices(invoices: List[Dict[str, Any]]) -> str:
+    """Build context string from retrieved invoices"""
+    if not invoices:
+        return "No relevant invoices found in the database."
+    
+    context = "Here are the relevant invoices:\n\n"
+    
+    for i, invoice in enumerate(invoices, 1):
+        context += f"**Invoice {i}:**\n"
+        context += f"- ID: {invoice.get('invoice_id', 'N/A')}\n"
+        context += f"- Employee: {invoice.get('employee_name', 'Unknown')}\n"
+        context += f"- Amount: ₹{invoice.get('amount', 0):,.2f}\n"
+        context += f"- Type: {invoice.get('invoice_type', 'Unknown')}\n"
+        context += f"- Status: {invoice.get('reimbursement_status', 'Unknown')}\n"
+        context += f"- Date: {invoice.get('invoice_date', 'Unknown')}\n"
+        context += f"- Reason: {invoice.get('reason', 'No reason provided')}\n"
+        
+        if invoice.get('fraud_detected'):
+            context += f"- **Fraud Alert**: {invoice.get('fraud_reason', 'Fraud detected')}\n"
+        
+        context += f"- Relevance: {invoice.get('score', 0.0):.2f}\n\n"
+    
+    return context
+
+async def generate_rag_response(query: str, context: str, conversation_history: List[Dict[str, str]]) -> str:
+    """Generate RAG response using LLM with context"""
+    # Build conversation context
+    conv_context = ""
+    if conversation_history:
+        conv_context = "Previous conversation:\n"
+        for turn in conversation_history[-3:]:  # Last 3 turns
+            conv_context += f"User: {turn.get('user', '')}\n"
+            conv_context += f"Assistant: {turn.get('assistant', '')}\n\n"
+    
+    # Create LLM prompt
+    prompt = f"""You are an intelligent assistant for an Invoice Reimbursement System. Answer the user's query based on the provided invoice data.
+
+{conv_context}
+
+**Current Query:** {query}
+
+**Available Invoice Data:**
+{context}
+
+**Instructions:**
+1. Provide accurate information based only on the provided invoice data
+2. Use markdown formatting for better readability
+3. Include specific details like amounts, employee names, and dates when relevant
+4. If asked about totals or summaries, calculate from the provided data
+5. If no relevant data is found, clearly state this
+6. Be conversational and helpful
+
+**Response:**"""
+
+    try:
+        # Use Groq API for response generation
+        import os
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            return "**Configuration Error**: LLM service not available. Please contact administrator."
+        
+        import requests
+        
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant for invoice analysis. Always respond in markdown format."
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
+                ],
+                "max_tokens": 1000,
+                "temperature": 0.1
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result["choices"][0]["message"]["content"]
+        else:
+            return f"**Error**: Unable to generate response. API returned status {response.status_code}"
+            
+    except Exception as e:
+        return f"**Error**: Failed to generate LLM response: {str(e)}"
 
 # In-memory storage for demo purposes
 invoices_storage = []
@@ -350,41 +602,62 @@ async def analyze_invoices(
 @app.post("/chatbot")
 async def chatbot_query(request: ChatbotRequest):
     """
-    RAG-powered chatbot for querying invoice data
+    RAG-powered chatbot for querying invoice data with vector search and conversation history
     """
     try:
-        # Simple chatbot response based on query
-        query = request.query.lower()
+        query = request.query.strip()
+        conversation_id = f"conv_{hash(str(request.conversation_history or []))}"
         
-        # Generate response based on stored invoices
-        if "total" in query or "amount" in query:
-            total_amount = sum(inv["amount"] for inv in invoices_storage)
-            response = f"Total amount from all processed invoices: ₹{total_amount:,.2f}"
-        elif "count" in query or "how many" in query:
-            count = len(invoices_storage)
-            response = f"Total number of processed invoices: {count}"
-        elif "fraud" in query:
-            fraud_count = sum(1 for inv in invoices_storage if inv["fraud_detected"])
-            response = f"Number of invoices with fraud detected: {fraud_count}"
-        elif "employee" in query:
-            employees = list(set(inv["employee_name"] for inv in invoices_storage))
-            response = f"Employees with processed invoices: {', '.join(employees)}"
-        else:
-            response = f"I can help you analyze your invoice data. Here's what I found: {len(invoices_storage)} invoices processed. You can ask about totals, counts, fraud detection, or specific employees."
+        # Extract metadata filters from query
+        filters = extract_filters_from_natural_language(query)
+        if request.filters:
+            filters.update(request.filters)
+        
+        # Perform vector search on invoice data
+        relevant_invoices = search_invoices_by_similarity(query, filters, limit=5)
+        
+        # Build context from retrieved invoices
+        context = build_context_from_invoices(relevant_invoices)
+        
+        # Generate RAG response using LLM with context
+        response = await generate_rag_response(query, context, request.conversation_history or [])
+        
+        # Store conversation history (in production, use persistent storage)
+        if conversation_id not in conversation_history:
+            conversation_history[conversation_id] = []
+        
+        conversation_history[conversation_id].append({
+            "user": query,
+            "assistant": response,
+            "timestamp": datetime.now().isoformat(),
+            "sources_count": len(relevant_invoices)
+        })
+        
+        # Format sources for response
+        sources = [
+            {
+                "invoice_id": inv["invoice_id"],
+                "employee_name": inv["employee_name"],
+                "amount": inv["amount"],
+                "status": inv["reimbursement_status"],
+                "relevance_score": inv.get("score", 0.0)
+            }
+            for inv in relevant_invoices[:3]  # Top 3 most relevant
+        ]
         
         return ChatbotResponse(
             success=True,
             response=response,
-            sources=[{"type": "invoice_analysis", "count": len(invoices_storage)}],
-            conversation_id="demo-conversation"
+            sources=sources,
+            conversation_id=conversation_id
         )
         
     except Exception as e:
         return ChatbotResponse(
             success=False,
-            response=f"Error processing query: {str(e)}",
+            response=f"**Error**: Unable to process your query. Please try again.\n\n*Error details: {str(e)}*",
             sources=[],
-            conversation_id="demo-conversation"
+            conversation_id="error-conversation"
         )
 
 @app.get("/invoices")
