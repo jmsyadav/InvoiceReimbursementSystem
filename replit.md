@@ -14,8 +14,8 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 
 ### Backend Architecture
 - **Framework**: FastAPI for REST API endpoints
-- **Service Layer**: Simplified single-file architecture with embedded functions for PDF processing, LLM analysis, and fraud detection
-- **Database Layer**: Hybrid approach with in-memory storage for metadata and Qdrant vector database for semantic search
+- **Service Layer**: Single-file architecture (`backend/simple_main.py`) with embedded functions for PDF processing, LLM analysis, and fraud detection
+- **Database Layer**: Qdrant vector database for semantic search with in-memory metadata storage
 - **Processing Pipeline**: Multi-stage processing with PDF parsing, LLM analysis, and vector embedding with automatic storage in Qdrant
 
 ### LLM Integration
@@ -117,6 +117,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Fixed critical chatbot search bug - enhanced employee name pattern matching and increased search limits to properly return all invoices for specific employees (previously only returning 1 of 3 invoices for Rani, 0 of 2 for Sachin)
 - July 04, 2025. Fixed duplicate invoice results in chatbot - implemented deduplication logic to ensure unique results and removed Amount Distribution feature from results view for cleaner interface
 - July 04, 2025. Fixed critical chatbot search bugs - enhanced "Unknown Employee" pattern matching, increased search limits to 20 for all employee queries, synchronized Qdrant vector storage with proper filtering, and eliminated data contamination issues for consistent search results
+- July 04, 2025. Major project cleanup - fixed app.py backend import to use simple_main, removed unused backend services/utils/database folders (~15 files), removed unused frontend files (chatbot.py, dashboard.py, invoice_analyzer.py), cleaned attached_assets folder to keep only 5 essential files, streamlined architecture to 70% smaller codebase
 
 ## User Preferences
 

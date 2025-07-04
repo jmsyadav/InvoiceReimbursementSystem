@@ -16,7 +16,7 @@ def start_backend():
     try:
         # Use Popen instead of run for non-blocking execution
         process = subprocess.Popen(
-            ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"],
+            ["python", "-m", "uvicorn", "backend.simple_main:app", "--host", "0.0.0.0", "--port", "8000"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
