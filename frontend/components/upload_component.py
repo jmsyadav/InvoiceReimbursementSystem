@@ -54,7 +54,7 @@ def render_upload_section():
                 response = api_client.analyze_invoices(policy_file, invoice_files)
                 
                 if response.get("success"):
-                    st.success(f"✅ {response['message']}")
+                    st.success(f"{response['message']}")
                     
                     # Store results in session state
                     st.session_state.processed_invoices = response.get("results", [])
@@ -62,7 +62,7 @@ def render_upload_section():
                     # Show summary
                     results = response.get("results", [])
                     if results:
-                        st.subheader("📊 Processing Summary")
+                        st.subheader("Processing Summary")
                         
                         # Create summary metrics
                         total_invoices = len(results)
@@ -85,7 +85,7 @@ def render_upload_section():
                             st.metric("Fraud Detected", fraud_detected)
                         
                         # Show top results
-                        st.subheader("🔍 Recent Results")
+                        st.subheader("Recent Results")
                         for i, result in enumerate(results[:5]):
                             with st.expander(f"Invoice: {result.get('invoice_id', 'Unknown')} - {result.get('employee_name', 'Unknown')}"):
                                 col1, col2 = st.columns(2)
@@ -107,7 +107,7 @@ def render_upload_section():
                                         st.info(f"Status: {status}")
                                     
                                     if result.get('fraud_detected'):
-                                        st.error("⚠️ Fraud detected")
+                                        st.error("Fraud detected")
                                 
                                 st.write(f"**Reason:** {result.get('reason', 'No reason provided')}")
                                 
@@ -115,18 +115,18 @@ def render_upload_section():
                                     st.write(f"**Fraud Reason:** {result.get('fraud_reason', 'No fraud reason provided')}")
                         
                         # Navigation suggestion
-                        st.info("💡 Go to 'View Results' to see all processed invoices or 'Chatbot Query' to ask questions about the data.")
+                        st.info("Go to 'View Results' to see all processed invoices or 'Chatbot Query' to ask questions about the data.")
                 
                 else:
-                    st.error(f"❌ Processing failed: {response.get('message', 'Unknown error')}")
+                    st.error(f"Processing failed: {response.get('message', 'Unknown error')}")
                     
             except Exception as e:
-                st.error(f"❌ Error processing invoices: {str(e)}")
+                st.error(f"Error processing invoices: {str(e)}")
                 st.exception(e)
     
     # Processing tips
     st.markdown("---")
-    st.subheader("💡 Processing Tips")
+    st.subheader("Processing Tips")
     st.markdown("""
     - **Policy Format**: Ensure your policy PDF is clear and well-formatted
     - **Invoice Quality**: Upload high-quality, readable invoice PDFs

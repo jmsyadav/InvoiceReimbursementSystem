@@ -84,7 +84,7 @@ def render_all_invoices_tab(api_client):
 
 def render_invoice_card(invoice):
     """Render a single invoice card"""
-    with st.expander(f"📄 {invoice.get('invoice_id', 'Unknown')} - {invoice.get('employee_name', 'Unknown')}"):
+    with st.expander(f"{invoice.get('invoice_id', 'Unknown')} - {invoice.get('employee_name', 'Unknown')}"):
         col1, col2 = st.columns(2)
         
         with col1:
@@ -107,9 +107,9 @@ def render_invoice_card(invoice):
             
             # Fraud indicator
             if invoice.get('fraud_detected'):
-                st.error("⚠️ **Fraud Detected**")
+                st.error("**Fraud Detected**")
             else:
-                st.success("✅ **No Fraud**")
+                st.success("**No Fraud**")
         
         # Reason
         st.write(f"**Reason:** {invoice.get('reason', 'No reason provided')}")
@@ -131,7 +131,7 @@ def render_invoice_card(invoice):
 
 def render_analytics_tab(api_client):
     """Render the analytics tab"""
-    st.subheader("📈 Invoice Analytics")
+    st.subheader("Invoice Analytics")
     
     try:
         with st.spinner("Loading analytics..."):
@@ -148,7 +148,7 @@ def render_analytics_tab(api_client):
                 df = pd.DataFrame(invoices)
                 
                 # Summary metrics
-                st.subheader("📊 Summary Metrics")
+                st.subheader("Summary Metrics")
                 
                 metric_cols = st.columns(4)
                 
@@ -168,7 +168,7 @@ def render_analytics_tab(api_client):
                     st.metric("Fraud Cases", fraud_count)
                 
                 # Status distribution
-                st.subheader("📊 Status Distribution")
+                st.subheader("Status Distribution")
                 status_counts = df['reimbursement_status'].value_counts()
                 
                 col1, col2 = st.columns(2)
@@ -182,7 +182,7 @@ def render_analytics_tab(api_client):
                         st.write(f"**{status}:** {count} ({percentage:.1f}%)")
                 
                 # Employee analysis
-                st.subheader("👥 Employee Analysis")
+                st.subheader("Employee Analysis")
                 employee_stats = df.groupby('employee_name').agg({
                     'amount': ['count', 'sum', 'mean'],
                     'fraud_detected': 'sum'
@@ -195,7 +195,7 @@ def render_analytics_tab(api_client):
                 
                 # Fraud analysis
                 if df['fraud_detected'].sum() > 0:
-                    st.subheader("🚨 Fraud Analysis")
+                    st.subheader("Fraud Analysis")
                     fraud_df = df[df['fraud_detected'] == True]
                     
                     st.write(f"**Fraud Rate:** {(len(fraud_df) / len(df)) * 100:.1f}%")
@@ -215,7 +215,7 @@ def render_analytics_tab(api_client):
 
 def render_fraud_detection_tab(api_client):
     """Render the fraud detection tab"""
-    st.subheader("🚨 Fraud Detection")
+    st.subheader("Fraud Detection")
     
     try:
         with st.spinner("Loading fraud data..."):
@@ -226,13 +226,13 @@ def render_fraud_detection_tab(api_client):
                 fraud_invoices = [inv for inv in invoices if inv.get('fraud_detected')]
                 
                 if not fraud_invoices:
-                    st.success("✅ No fraud detected in processed invoices!")
+                    st.success("No fraud detected in processed invoices!")
                     return
                 
-                st.error(f"⚠️ {len(fraud_invoices)} fraudulent invoice(s) detected")
+                st.error(f"{len(fraud_invoices)} fraudulent invoice(s) detected")
                 
                 # Fraud summary
-                st.subheader("📊 Fraud Summary")
+                st.subheader("Fraud Summary")
                 
                 fraud_amount = sum(inv.get('amount', 0) for inv in fraud_invoices)
                 fraud_rate = (len(fraud_invoices) / len(invoices)) * 100
@@ -249,10 +249,10 @@ def render_fraud_detection_tab(api_client):
                     st.metric("Fraud Rate", f"{fraud_rate:.1f}%")
                 
                 # Fraud details
-                st.subheader("🔍 Fraud Details")
+                st.subheader("Fraud Details")
                 
                 for fraud_invoice in fraud_invoices:
-                    with st.expander(f"🚨 {fraud_invoice.get('invoice_id', 'Unknown')} - {fraud_invoice.get('employee_name', 'Unknown')}"):
+                    with st.expander(f"{fraud_invoice.get('invoice_id', 'Unknown')} - {fraud_invoice.get('employee_name', 'Unknown')}"):
                         col1, col2 = st.columns(2)
                         
                         with col1:
@@ -272,7 +272,7 @@ def render_fraud_detection_tab(api_client):
                             st.write(f"**Dropping Date:** {fraud_invoice.get('dropping_date')}")
                 
                 # Fraud prevention tips
-                st.subheader("💡 Fraud Prevention Tips")
+                st.subheader("Fraud Prevention Tips")
                 st.markdown("""
                 - **Date Validation**: Ensure travel dates are logical and consistent
                 - **Amount Verification**: Check for unusually high amounts for expense categories

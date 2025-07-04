@@ -36,7 +36,7 @@ def start_backend():
 def main():
     st.set_page_config(
         page_title="Invoice Reimbursement System",
-        page_icon="📄",
+        page_icon="",
         layout="wide",
         initial_sidebar_state="expanded"
     )
@@ -59,7 +59,7 @@ def main():
         time.sleep(2)  # Give backend time to start
     
     # Main title
-    st.title("📄 Invoice Reimbursement System")
+    st.title("Invoice Reimbursement System")
     st.markdown("---")
     
     # Sidebar navigation
