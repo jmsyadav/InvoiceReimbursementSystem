@@ -85,6 +85,11 @@ async def analyze_invoices(
         
         # Process each invoice file
         invoice_counter = 0
+        processed_files = set()  # Track processed files to avoid duplicates
+        total_files_to_process = len(invoice_files)
+        
+        print(f"Starting to process {total_files_to_process} uploaded files")
+        
         for zip_idx, invoice_file in enumerate(invoice_files):
             invoice_content = await invoice_file.read()
             
@@ -113,7 +118,15 @@ async def analyze_invoices(
                     with zipfile.ZipFile(io.BytesIO(invoice_content)) as zip_ref:
                         for pdf_filename in zip_ref.namelist():
                             if pdf_filename and pdf_filename.endswith('.pdf'):
+                                # Create a unique identifier for this PDF content
                                 pdf_content = zip_ref.read(pdf_filename)
+                                pdf_hash = str(hash(pdf_content))  # Simple hash to identify duplicate content
+                                
+                                # Skip if we've already processed this content
+                                if pdf_hash in processed_files:
+                                    print(f"Skipping duplicate PDF: {pdf_filename}")
+                                    continue
+                                processed_files.add(pdf_hash)
                                 
                                 # Extract text from PDF
                                 pdf_text = ""
@@ -212,6 +225,13 @@ async def analyze_invoices(
                 try:
                     import pdfplumber
                     import io
+                    
+                    # Check for duplicate content
+                    pdf_hash = str(hash(invoice_content))
+                    if pdf_hash in processed_files:
+                        print(f"Skipping duplicate PDF: {invoice_file.filename}")
+                        continue
+                    processed_files.add(pdf_hash)
                     
                     # Extract text from PDF
                     pdf_text = ""

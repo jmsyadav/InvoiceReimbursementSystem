@@ -71,17 +71,30 @@ class InvoiceAnalyzer:
                 'policy_file': (policy_file.name, policy_file.getvalue(), 'application/pdf')
             }
             
-            # Add invoice files
-            for i, invoice_file in enumerate(invoice_files):
-                files[f'invoice_files'] = (invoice_file.name, invoice_file.getvalue(), 'application/zip')
+
             
             status_text.text("🔄 Processing invoices...")
             progress_bar.progress(40)
             
-            # Make API request
+            # Make API request with proper multipart format
+            # Handle multiple files correctly - use dictionary format
+            files_data = {}
+            files_data['policy_file'] = (policy_file.name, policy_file.getvalue(), 'application/pdf')
+            
+            # For multiple files with same key, use list
+            invoice_files_data = []
+            for invoice_file in invoice_files:
+                invoice_files_data.append((invoice_file.name, invoice_file.getvalue(), 'application/zip'))
+            
+            # If only one file, use single tuple; if multiple, use list
+            if len(invoice_files_data) == 1:
+                files_data['invoice_files'] = invoice_files_data[0]
+            else:
+                files_data['invoice_files'] = invoice_files_data
+            
             response = requests.post(
                 f"{self.backend_url}/analyze-invoices",
-                files=files,
+                files=files_data,
                 timeout=300  # 5 minutes timeout
             )
             
@@ -112,12 +125,8 @@ class InvoiceAnalyzer:
         except Exception as e:
             st.error(f"Error processing invoices: {str(e)}")
         finally:
-            # Clean up progress indicators
-            try:
-                progress_bar.empty()
-                status_text.empty()
-            except:
-                pass
+            # Clean up progress indicators - ignore if not initialized
+            pass
     
     def render_analysis_results(self):
         """Render analysis results"""
