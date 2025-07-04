@@ -209,24 +209,105 @@ async def analyze_invoices(
                     invoice_counter += 1
             else:
                 # Process single PDF file
-                result = {
-                    "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
-                    "employee_name": f"Employee {invoice_counter + 1}",
-                    "invoice_date": datetime.now().strftime('%Y-%m-%d'),
-                    "amount": 1500.0 + (invoice_counter * 100),
-                    "reimbursement_status": "Fully Reimbursed" if invoice_counter % 2 == 0 else "Partially Reimbursed",
-                    "reason": "Meets all policy requirements" if invoice_counter % 2 == 0 else "Exceeds daily meal limit",
-                    "fraud_detected": False,
-                    "fraud_reason": "",
-                    "invoice_text": f"PDF content from {invoice_file.filename}",
-                    "invoice_data": {
-                        "invoice_type": "general",
-                        "description": f"Invoice from {invoice_file.filename}",
-                        "filename": invoice_file.filename
+                try:
+                    import pdfplumber
+                    import io
+                    
+                    # Extract text from PDF
+                    pdf_text = ""
+                    with pdfplumber.open(io.BytesIO(invoice_content)) as pdf:
+                        for page in pdf.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                pdf_text += page_text + "\n"
+                    
+                    print(f"Processing single PDF: {invoice_file.filename}")
+                    print(f"PDF text preview: {pdf_text[:200]}")
+                    
+                    # Extract employee name from PDF content or filename
+                    filename = invoice_file.filename if invoice_file.filename else "unknown.pdf"
+                    employee_name = extract_employee_name(pdf_text, filename)
+                    print(f"Name extraction result for {filename}: '{employee_name}'")
+                    
+                    # Detect invoice type from PDF content
+                    invoice_type = detect_invoice_type_from_content(pdf_text, filename)
+                    print(f"Invoice type detection: {invoice_file.filename} -> {invoice_type}")
+                    
+                    # Set base amount based on type
+                    if invoice_type == "meal":
+                        base_amount = 850
+                    elif invoice_type == "travel":
+                        base_amount = 15000
+                    elif invoice_type == "cab":
+                        base_amount = 1200
+                    else:
+                        base_amount = 1000
+                    
+                    # Extract amount from PDF content
+                    extracted_amount = extract_amount(pdf_text, base_amount)
+                    amount = extracted_amount if extracted_amount != base_amount else base_amount + (invoice_counter * 150)
+                    
+                    # Extract dates and detect fraud
+                    date_fraud_info = extract_dates_and_detect_fraud(pdf_text)
+                    
+                    # Analyze against HR policy using LLM
+                    if date_fraud_info['fraud_detected']:
+                        status = "Declined"
+                        reason = f"Fraud detected: {date_fraud_info['fraud_reason']}"
+                    else:
+                        # Use LLM to analyze invoice against policy
+                        print(f"Calling LLM analysis for {employee_name}, amount: {amount}, type: {invoice_type}")
+                        policy_analysis = await analyze_invoice_against_policy(
+                            policy_text, pdf_text, invoice_type, amount, employee_name
+                        )
+                        status = policy_analysis['status']
+                        reason = policy_analysis['reason']
+                        print(f"LLM analysis result: {status} - {reason}")
+                    
+                    result = {
+                        "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
+                        "employee_name": employee_name or f"Employee {invoice_counter + 1}",
+                        "invoice_date": date_fraud_info['invoice_date'],
+                        "amount": amount,
+                        "invoice_type": invoice_type,
+                        "reimbursement_status": status,
+                        "reason": reason,
+                        "fraud_detected": date_fraud_info['fraud_detected'],
+                        "fraud_reason": date_fraud_info['fraud_reason'],
+                        "invoice_text": pdf_text[:500] + "..." if len(pdf_text) > 500 else pdf_text,
+                        "reporting_date": date_fraud_info['reporting_date'],
+                        "dropping_date": date_fraud_info['dropping_date'],
+                        "invoice_data": {
+                            "invoice_type": invoice_type,
+                            "description": f"Invoice from {invoice_file.filename}",
+                            "filename": invoice_file.filename,
+                            "reporting_date": date_fraud_info['reporting_date'],
+                            "dropping_date": date_fraud_info['dropping_date']
+                        }
                     }
-                }
-                results.append(result)
-                invoice_counter += 1
+                    results.append(result)
+                    invoice_counter += 1
+                    
+                except Exception as e:
+                    print(f"Error processing single PDF {invoice_file.filename}: {str(e)}")
+                    result = {
+                        "invoice_id": f"INV-{datetime.now().strftime('%Y%m%d')}-{invoice_counter:03d}",
+                        "employee_name": f"Employee {invoice_counter + 1}",
+                        "invoice_date": datetime.now().strftime('%Y-%m-%d'),
+                        "amount": 1500.0 + (invoice_counter * 100),
+                        "reimbursement_status": "Declined",
+                        "reason": f"Could not process PDF file: {str(e)}",
+                        "fraud_detected": False,
+                        "fraud_reason": "",
+                        "invoice_text": f"PDF file processing failed: {invoice_file.filename}",
+                        "invoice_data": {
+                            "invoice_type": "general",
+                            "description": f"Failed to process {invoice_file.filename}",
+                            "filename": invoice_file.filename
+                        }
+                    }
+                    results.append(result)
+                    invoice_counter += 1
         
         # Store results in memory
         invoices_storage.extend(results)
@@ -597,8 +678,9 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
         (r'Reporting\s*Date\s*\n\s*\d{1,2}:\d{2}', 'reporting_marker'),
         (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Dropping\s*point\s*Date', 'dropping'),
         (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Departure\s*time', 'reporting'),
-        # Cab invoice: "Invoice Date 17 May 2024"
+        # Cab invoice: "Invoice Date 17 May 2024" or "InvoiceDate17May2024"
         (r'Invoice\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
+        (r'InvoiceDate(\d{1,2}[A-Za-z]{3}\d{4})', 'general'),
         # Meal invoice: "Date: Dec 23, 2024 18:24" and "Date: 26 Dec 2024"
         (r'Date:\s*([A-Za-z]{3}\s+\d{1,2},?\s+\d{4})', 'general'),
         (r'Date:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
@@ -634,6 +716,11 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
     def parse_date(date_str):
         """Parse date string to datetime object"""
         try:
+            # Handle concatenated date format like "17May2024"
+            if len(date_str) > 6 and date_str[2:5].isalpha():
+                # Insert spaces to convert "17May2024" to "17 May 2024"
+                date_str = date_str[:2] + ' ' + date_str[2:5] + ' ' + date_str[5:]
+            
             # Try different date formats including the actual invoice formats
             date_formats = [
                 '%d %b %Y',    # "17 Aug 2024"
