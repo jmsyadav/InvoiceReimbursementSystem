@@ -1,0 +1,100 @@
+Purpose of the System
+The system aims to:
+● Automate Invoice Analysis: Process PDF invoices and compare them against
+a given HR reimbursement policy to determine reimbursement status.
+● Efficient Data Storage & Retrieval: Store the analysis results, including invoice
+details, reimbursement status, reasons, and employee information, in a vector
+store for efficient similarity search and metadata filtering.
+● Enable Intelligent Querying: Provide a chatbot that allows users to ask natural
+language questions to find specific invoice analyses based on various criteria like
+employee name, date, or status.
+III. Requirements
+Functionality
+Part One: Invoice Reimbursement Analysis Endpoint
+● API Endpoint: Develop a FastAPI endpoint for invoice analysis.
+● Inputs:
+○ PDF file containing the HR reimbursement policy.
+○ accept one or more ZIP files containing one or more employee invoice PDFs.
+
+● Processing:
+○ Parse PDF documents (policy and invoices).
+○ Utilize an LLM (e.g., GPT, Gemini, or open-source models via Groq) to
+analyze each invoice against the reimbursement policy.
+○ The LLM must determine the reimbursement status and provide a reason
+for the status categories.
+● Reimbursement Status Categories:
+○ Fully Reimbursed: The entire invoice amount is reimbursable.
+○ Partially Reimbursed: Only a portion of the invoice amount is
+reimbursable.
+○ Declined: The invoice is not reimbursable according to the policy.
+● Vector Store Integration:
+○ Store the analysis response: Use invoice identifier, reimbursement status,
+detailed reason for the status, employee name, and date as metadata.
+○ Generate vector embeddings for the invoice text content and the
+reimbursement result (status and reason).
+○ Store these embeddings along with the metadata in a chosen vector store
+(e.g., ChromaDB, MongoDB Atlas, Qdrant, Weaviate, FAISS).
+● Response:
+○ Return a JSON response indicating task success or failure.
+Part Two: RAG LLM Chatbot Endpoint
+● API Endpoint: Develop a FastAPI endpoint for chatbot querying which will have
+the context of previous queries and response (can be stored locally or in db).
+● Inputs:
+○ A search query from the user. This query can include criteria such as
+employee name, invoice date, reimbursement status, specific reasons,
+etc.
+● Processing:
+○ The LLM will be equipped with a vector search tool.
+○ The LLM will interpret the user query and utilize the vector search tool to
+retrieve relevant invoice reimbursement analysis data from the vector
+store.
+● Vector Search Tool:
+○ Accept an input query and metadata filters from the LLM.
+○ Perform similarity search (e.g., using cosine similarity) on the vector
+embeddings.
+○ Support metadata filtering (e.g., by employee name, status, date,
+employee name) to refine search results.
+● RAG Chatbot Response:
+○ Generate responses based on the invoice analysis documents retrieved
+from the vector database.
+○ If the user query includes specific metadata (employee name, date,
+status), the system should use both vector search and metadata filtering.
+○ Responses should be provided in markdown format.
+Technical Specifications
+● Programming Language: Python
+● Framework: FastAPI for API development, Langchain or any other AI framework
+for LLM and tool usage.
+● Large Language Models (LLMs): OpenAI GPT, Gemini, or other open-source
+LLMs (e.g., accessible via Groq).
+● Vector Store: ChromaDB, Qdrant, MongoDB Atlas, Weaviate, or FAISS.
+● Embedding Models: OpenAI embedding models or open-source models from
+Sentence-Transformers, Hugging Face, etc. 
+
+Technical Specifications
+● Programming Language: Python
+● Framework: FastAPI for API development, Langchain or any other AI framework
+for LLM and tool usage.
+● Large Language Models (LLMs): OpenAI GPT, Gemini, or other open-source
+LLMs (e.g., accessible via Groq).
+● Vector Store: ChromaDB, Qdrant, MongoDB Atlas, Weaviate, or FAISS.
+● Embedding Models: OpenAI embedding models or open-source models from
+Sentence-Transformers, Hugging Face, etc.
+
+Documentation
+● README File:
+○ Project Overview: Brief description of the Invoice Reimbursement
+System and its capabilities.
+○ Installation Instructions: Detailed steps to set up and run the application
+locally.
+○ Usage Guide: Clear instructions on how to use both API endpoints.
+○ Technical Details: Explanation of libraries used, LLM and embedding
+model choices, vector store integration approach, and overall architecture.
+○ Prompt Design: Explanation of how prompts were crafted for invoice
+analysis and chatbot interaction.
+● Code Comments: Provide detailed comments and docstrings explaining the
+approach to vector store integration, chatbot logic, invoice analysis, and any
+complex functions.
+Code Quality
+● Structure & Readability: Ensure the code is well-structured, modular, and
+follows best practices for readability and maintainability.
+
