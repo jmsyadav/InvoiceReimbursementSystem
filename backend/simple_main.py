@@ -431,6 +431,28 @@ def build_context_from_invoices(invoices: List[Dict[str, Any]]) -> str:
         context += f"Date: {invoice.get('invoice_date', 'Unknown')}\n"
         context += f"Reason: {invoice.get('reason', 'No reason provided')}\n"
         
+        # Add calculated reimbursed amount based on status and policy limits
+        status = invoice.get('reimbursement_status', 'Unknown')
+        amount = invoice.get('amount', 0)
+        invoice_type = invoice.get('invoice_type', 'Unknown')
+        
+        if status == "Fully Reimbursed":
+            reimbursed_amount = amount
+        elif status == "Partially Reimbursed":
+            # Apply policy limits based on invoice type
+            if invoice_type == "meal":
+                reimbursed_amount = min(amount, 200)  # Meal policy limit
+            elif invoice_type == "travel":
+                reimbursed_amount = min(amount, 2000)  # Travel policy limit
+            elif invoice_type == "cab":
+                reimbursed_amount = min(amount, 150)  # Cab policy limit
+            else:
+                reimbursed_amount = amount * 0.5  # Default 50% for unknown types
+        else:  # Declined
+            reimbursed_amount = 0
+        
+        context += f"Reimbursed Amount: Rs {reimbursed_amount:,.2f}\n"
+        
         if invoice.get('fraud_detected'):
             context += f"Fraud Alert: {invoice.get('fraud_reason', 'Fraud detected')}\n"
         
@@ -450,6 +472,13 @@ async def generate_rag_response(query: str, context: str, conversation_history: 
     
     # Create LLM prompt
     prompt = f"""You are an intelligent assistant for an Invoice Reimbursement System. Answer the user's query based on the provided invoice data.
+
+IMPORTANT CALCULATION RULES:
+- For reimbursement totals, use the "Reimbursed Amount" field, NOT the "Amount" field
+- Fully Reimbursed = Full amount reimbursed
+- Partially Reimbursed = Limited amount based on policy (Meal: ₹200, Travel: ₹2000, Cab: ₹150)
+- Declined = ₹0 reimbursed
+- Always calculate totals accurately using the actual reimbursed amounts
 
 {conv_context}
 
