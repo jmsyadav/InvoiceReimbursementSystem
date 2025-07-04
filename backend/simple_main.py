@@ -80,11 +80,11 @@ async def analyze_invoices(
                     if 'meal' in zip_name:
                         invoice_type = "meal"
                         base_amount = 850
-                    elif 'travel' in zip_name or 'flight' in zip_name:
+                    elif 'travel' in zip_name or 'flight' in zip_name or 'book' in zip_name or 'bus' in zip_name:
                         invoice_type = "travel"
                         base_amount = 15000
                     elif 'cab' in zip_name or 'transport' in zip_name:
-                        invoice_type = "transportation"
+                        invoice_type = "cab"
                         base_amount = 1200
                     else:
                         invoice_type = "general"
@@ -269,40 +269,40 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     """Extract employee name from PDF content or filename with enhanced patterns"""
     import re
     
-    # Enhanced patterns for employee name extraction
+    # Enhanced patterns based on actual invoice formats
     name_patterns = [
-        r'Customer\s*Name[:\s]*([A-Za-z\s\.]+)',
-        r'Passenger\s*Details[:\s]*([A-Za-z\s\.]+)',
-        r'Passenger[:\s]*([A-Za-z\s\.]+)',
-        r'Customer[:\s]*([A-Za-z\s\.]+)',
-        r'Employee[:\s]*([A-Za-z\s\.]+)',
-        r'Name[:\s]*([A-Za-z\s\.]+)',
-        r'Mr\.?\s*([A-Za-z\s\.]+)',
-        r'Ms\.?\s*([A-Za-z\s\.]+)',
-        r'Mrs\.?\s*([A-Za-z\s\.]+)',
-        r'Traveler[:\s]*([A-Za-z\s\.]+)',
-        r'Guest[:\s]*([A-Za-z\s\.]+)',
-        # Pattern for names in format: SURNAME FIRSTNAME
-        r'\b([A-Z]{2,}\s+[A-Z][a-z]+)',
-        # Pattern for normal name format
-        r'\b([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b'
+        # For bus tickets: "Passenger Details (Age, Gender)\nRamesh 34, male"
+        r'Passenger\s*Details.*?\n([A-Za-z]+(?:\s+[A-Za-z]+)*)\s*\d+,?\s*[a-zA-Z]*',
+        # For cab invoices: "Customer Name Anjaneyaa K"
+        r'Customer\s*Name\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        # General customer patterns
+        r'Customer[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        r'Passenger[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        r'Employee[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        r'Name[:\s]*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        # Title patterns
+        r'Mr\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        r'Ms\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
+        r'Mrs\.?\s*([A-Za-z]+(?:\s+[A-Za-z]+)*)',
     ]
     
     for pattern in name_patterns:
-        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE | re.MULTILINE)
         for match in matches:
             name = match.strip()
-            # Clean up common noise words and validate
-            noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date', 'number', 'address', 'phone', 'email']
-            name_words = [word for word in name.split() if word.lower() not in noise_words and len(word) > 1]
-            
-            # Validate name (should have 1-3 words, each at least 2 characters)
-            if 1 <= len(name_words) <= 3 and all(len(word) >= 2 for word in name_words):
-                # Check if it looks like a real name (not numbers or codes)
-                if all(word.isalpha() or '.' in word for word in name_words):
-                    return ' '.join(name_words).title()
+            # Clean up and validate
+            if name and len(name) > 1:
+                # Remove common noise words
+                noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date', 'number', 'address', 'phone', 'email', 'details', 'age', 'gender']
+                name_words = [word for word in name.split() if word.lower() not in noise_words and len(word) > 1]
+                
+                # Validate name (should have 1-3 words, each at least 2 characters)
+                if 1 <= len(name_words) <= 3 and all(len(word) >= 2 for word in name_words):
+                    # Check if it looks like a real name (alphabetic)
+                    if all(word.isalpha() for word in name_words):
+                        return ' '.join(name_words).title()
     
-    # Enhanced filename extraction
+    # Enhanced filename extraction as fallback
     clean_filename = filename.replace('.pdf', '').replace('_', ' ').replace('-', ' ')
     # Remove common prefixes/suffixes more comprehensively
     clean_filename = re.sub(r'(invoice|bill|receipt|book|template|\d+)', '', clean_filename, flags=re.IGNORECASE)
@@ -312,37 +312,48 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     if clean_filename and len(clean_filename.split()) <= 3:
         return clean_filename.title()
     
-    return f"Unknown Employee"
+    return "Unknown Employee"
 
 def extract_amount(pdf_text: str, base_amount: float) -> float:
-    """Extract amount from PDF content"""
+    """Extract amount from PDF content based on actual invoice formats"""
     import re
     
-    # Look for currency amounts in various formats
+    # Enhanced amount patterns for actual invoice formats
     amount_patterns = [
-        r'Total[:\s]*₹?\s*([0-9,]+\.?\d*)',
-        r'Amount[:\s]*₹?\s*([0-9,]+\.?\d*)',
-        r'₹\s*([0-9,]+\.?\d*)',
-        r'Rs\.?\s*([0-9,]+\.?\d*)',
-        r'INR\s*([0-9,]+\.?\d*)',
-        r'([0-9,]+\.?\d*)\s*INR',
-        r'Total:\s*([0-9,]+\.?\d*)',
-        r'Bill Amount[:\s]*([0-9,]+\.?\d*)'
+        # Bus ticket: "₹ 2100\nTotal Fare :"
+        r'₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)\s*\n\s*Total\s*Fare',
+        # Cab invoice: "Total ₹ 23" or "Total\nCustomerRide\nFare"
+        r'Total\s*₹\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        # Meal invoice: "Total: 440.00"
+        r'Total:\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        # General patterns
+        r'Total\s*Fare[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'Grand\s*Total[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'Final\s*Amount[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'Bill\s*Amount[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'Total[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'Amount[:\s]*(?:₹|Rs\.?|INR)?\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'(?:₹|Rs\.?|INR)\s*(\d+(?:,\d{3})*(?:\.\d{2})?)',
+        r'(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:₹|Rs\.?|INR)'
     ]
     
+    amounts = []
     for pattern in amount_patterns:
-        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
-        if matches:
-            for match in matches:
-                try:
-                    # Clean and convert amount
-                    clean_amount = match.replace(',', '').strip()
-                    amount = float(clean_amount)
-                    # Only consider reasonable amounts (between 1 and 1,000,000)
-                    if 1 <= amount <= 1000000:
-                        return amount
-                except ValueError:
-                    continue
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE | re.MULTILINE)
+        for match in matches:
+            try:
+                # Remove commas and convert to float
+                amount_str = match.replace(',', '')
+                amount = float(amount_str)
+                if 10 <= amount <= 100000:  # Reasonable range check
+                    amounts.append(amount)
+            except ValueError:
+                continue
+    
+    # Return the largest reasonable amount found
+    if amounts:
+        # For invoices with multiple amounts, prioritize the largest (usually the total)
+        return max(amounts)
     
     # Return base amount if no valid amount found
     return base_amount
@@ -352,9 +363,18 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
     import re
     from datetime import datetime, timedelta
     
-    # Enhanced date patterns for Indian date formats
+    # Enhanced date patterns based on actual invoice formats
     date_patterns = [
-        # Reporting Date patterns
+        # Bus ticket: "Reporting Date\n13:12" and "21 Sep 2024\nDropping point Date"
+        (r'Reporting\s*Date\s*\n\s*\d{1,2}:\d{2}', 'reporting_marker'),
+        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Dropping\s*point\s*Date', 'dropping'),
+        (r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s*\n\s*Departure\s*time', 'reporting'),
+        # Cab invoice: "Invoice Date 17 May 2024"
+        (r'Invoice\s*Date\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', 'general'),
+        # Meal invoice: "Date: Dec 23, 2024 18:24"
+        (r'Date:\s*([A-Za-z]{3}\s+\d{1,2},?\s+\d{4})', 'general'),
+        
+        # Standard date patterns as fallback
         (r'Reporting\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
         (r'Report\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
         (r'Journey\s*Date[:\s]*(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})', 'reporting'),
@@ -380,8 +400,22 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
     def parse_date(date_str):
         """Parse date string to datetime object"""
         try:
-            # Try different date formats
-            for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%d/%m/%y', '%d-%m-%y', '%m/%d/%Y', '%m-%d-%Y']:
+            # Try different date formats including the actual invoice formats
+            date_formats = [
+                '%d %b %Y',    # "17 Aug 2024"
+                '%d %B %Y',    # "17 August 2024"
+                '%b %d, %Y',   # "Dec 23, 2024"
+                '%B %d, %Y',   # "December 23, 2024"
+                '%d/%m/%Y',    # "17/08/2024"
+                '%d-%m-%Y',    # "17-08-2024"
+                '%d/%m/%y',    # "17/08/24"
+                '%d-%m-%y',    # "17-08-24"
+                '%m/%d/%Y',    # "08/17/2024"
+                '%m-%d-%Y',    # "08-17-2024"
+                '%Y-%m-%d',    # "2024-08-17"
+            ]
+            
+            for fmt in date_formats:
                 try:
                     return datetime.strptime(date_str, fmt)
                 except ValueError:
@@ -392,16 +426,25 @@ def extract_dates_and_detect_fraud(pdf_text: str) -> dict:
     
     # Extract dates using patterns
     for pattern, date_type in date_patterns:
-        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE | re.MULTILINE)
         for match in matches:
-            parsed_date = parse_date(match)
-            if parsed_date:
-                if date_type == 'reporting' and not reporting_date:
-                    reporting_date = parsed_date
-                elif date_type == 'dropping' and not dropping_date:
-                    dropping_date = parsed_date
-                elif date_type == 'general' and not invoice_date:
-                    invoice_date = parsed_date
+            if date_type == 'reporting_marker':
+                # Special case: look for the actual reporting date around the marker
+                # For bus tickets, the date appears in the format "17 Aug 2024"
+                reporting_match = re.search(r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})', pdf_text)
+                if reporting_match:
+                    parsed_date = parse_date(reporting_match.group(1))
+                    if parsed_date and not reporting_date:
+                        reporting_date = parsed_date
+            else:
+                parsed_date = parse_date(match)
+                if parsed_date:
+                    if date_type == 'reporting' and not reporting_date:
+                        reporting_date = parsed_date
+                    elif date_type == 'dropping' and not dropping_date:
+                        dropping_date = parsed_date
+                    elif date_type == 'general' and not invoice_date:
+                        invoice_date = parsed_date
     
     # Use reporting date as official invoice date, fallback to general date
     official_date = reporting_date or invoice_date or datetime.now()
