@@ -46,14 +46,14 @@ class APIClient:
                 return {"success": False, "message": "Backend service is not available. Please try again later."}
             
             # Prepare files for upload
-            files = {
-                "policy_file": (policy_file.name, policy_file.getvalue(), "application/pdf")
-            }
+            files = [
+                ("policy_file", (policy_file.name, policy_file.getvalue(), "application/pdf"))
+            ]
             
             # Add invoice files
-            for i, invoice_file in enumerate(invoice_files):
-                files[f"invoice_files"] = (invoice_file.name, invoice_file.getvalue(), 
-                                         "application/pdf" if invoice_file.name.endswith('.pdf') else "application/zip")
+            for invoice_file in invoice_files:
+                files.append(("invoice_files", (invoice_file.name, invoice_file.getvalue(), 
+                                             "application/pdf" if invoice_file.name.endswith('.pdf') else "application/zip")))
             
             # Make API request
             response = self.session.post(
