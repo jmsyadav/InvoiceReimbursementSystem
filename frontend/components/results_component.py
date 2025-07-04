@@ -4,13 +4,13 @@ from frontend.services.api_client import APIClient
 
 def render_results_section():
     """Render the results viewing section"""
-    st.header("📊 View Results")
+    st.header("View Results")
     
     # Initialize API client
     api_client = st.session_state.api_client
     
     # Tabs for different views
-    tab1, tab2, tab3 = st.tabs(["📋 All Invoices", "📈 Analytics", "🚨 Fraud Detection"])
+    tab1, tab2, tab3 = st.tabs(["All Invoices", "Analytics", "Fraud Detection"])
     
     with tab1:
         render_all_invoices_tab(api_client)

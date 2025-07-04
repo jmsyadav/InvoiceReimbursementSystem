@@ -5,7 +5,7 @@ from frontend.services.api_client import APIClient
 
 def render_upload_section():
     """Render the invoice upload and processing section"""
-    st.header("📤 Upload & Process Invoices")
+    st.header("Upload & Process Invoices")
     
     # Instructions
     st.markdown("""
@@ -44,7 +44,7 @@ def render_upload_section():
                 st.write(f"- {file.name}")
     
     # Process button
-    if st.button("🔍 Process Invoices", type="primary", disabled=not (policy_file and invoice_files)):
+    if st.button("Process Invoices", type="primary", disabled=not (policy_file and invoice_files)):
         with st.spinner("Processing invoices... This may take a few minutes."):
             try:
                 # Initialize API client

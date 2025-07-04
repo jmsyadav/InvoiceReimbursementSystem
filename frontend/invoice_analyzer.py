@@ -130,7 +130,7 @@ class InvoiceAnalyzer:
     
     def render_analysis_results(self):
         """Render analysis results"""
-        st.subheader("📊 Analysis Results")
+        st.subheader("Analysis Results")
         
         results = st.session_state.analysis_results
         

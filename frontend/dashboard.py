@@ -19,7 +19,7 @@ class Dashboard:
     
     def render(self):
         """Render the complete dashboard"""
-        st.header("📊 Invoice Reimbursement Dashboard")
+        st.header("Invoice Reimbursement Dashboard")
         
         # Load data
         with st.spinner("Loading dashboard data..."):
@@ -145,7 +145,7 @@ class Dashboard:
     
     def render_status_overview(self, df: pd.DataFrame):
         """Render status distribution charts"""
-        st.subheader("📊 Status Distribution")
+        st.subheader("Status Distribution")
         
         col1, col2 = st.columns(2)
         
@@ -247,7 +247,7 @@ class Dashboard:
             st.plotly_chart(fig_count, use_container_width=True)
         
         # Employee details table
-        st.subheader("📊 Employee Details")
+        st.subheader("Employee Details")
         
         # Add approval rate for each employee
         employee_approval = df.groupby('employee_name').apply(
@@ -370,7 +370,7 @@ class Dashboard:
                 st.plotly_chart(fig_status_amt, use_container_width=True)
         
         # Amount ranges analysis
-        st.subheader("📊 Amount Ranges")
+        st.subheader("Amount Ranges")
         
         # Create amount range bins
         df['amount_range'] = pd.cut(
@@ -469,7 +469,7 @@ class Dashboard:
             for insight in insights:
                 st.info(insight)
         else:
-            st.info("📊 All metrics appear normal - no specific recommendations at this time")
+            st.info("All metrics appear normal - no specific recommendations at this time")
 
 
 def render_dashboard():
@@ -485,16 +485,16 @@ def render_dashboard():
     col1, col2, col3 = st.columns([1, 1, 2])
     
     with col1:
-        if st.button("🔄 Refresh Data", help="Reload dashboard data"):
+        if st.button("Refresh Data", help="Reload dashboard data"):
             st.rerun()
     
     with col2:
-        if st.button("📊 Export Analytics", help="Export dashboard data"):
+        if st.button("Export Analytics", help="Export dashboard data"):
             export_dashboard_data(api_client)
     
     # Auto-refresh option
     with col3:
-        auto_refresh = st.checkbox("🔄 Auto-refresh (30s)", help="Automatically refresh data every 30 seconds")
+        auto_refresh = st.checkbox("Auto-refresh (30s)", help="Automatically refresh data every 30 seconds")
         
         if auto_refresh:
             import time

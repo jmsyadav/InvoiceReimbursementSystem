@@ -3,7 +3,7 @@ from frontend.services.api_client import APIClient
 
 def render_chatbot_section():
     """Render the chatbot query section"""
-    st.header("🤖 Chatbot Query")
+    st.header("Chatbot Query")
     
     # Initialize API client
     api_client = st.session_state.api_client
@@ -92,7 +92,7 @@ def render_sources_section(sources):
     if not sources:
         return
     
-    with st.expander("📚 Sources", expanded=False):
+    with st.expander("Sources", expanded=False):
         st.markdown("**Relevant invoices used to answer your question:**")
         
         for i, source in enumerate(sources, 1):
@@ -110,13 +110,13 @@ def render_sources_section(sources):
                 with col3:
                     status = source.get('reimbursement_status', 'Unknown')
                     if status == "Fully Reimbursed":
-                        st.success("✅ Approved")
+                        st.success("Approved")
                     elif status == "Partially Reimbursed":
-                        st.warning("⚠️ Partial")
+                        st.warning("Partial")
                     elif status == "Declined":
-                        st.error("❌ Declined")
+                        st.error("Declined")
                     else:
-                        st.info("ℹ️ Unknown")
+                        st.info("Unknown")
                 
                 # Similarity score
                 similarity_score = source.get('similarity_score', 0)
@@ -132,34 +132,13 @@ def render_chat_controls():
     col1, col2, col3 = st.columns([1, 1, 2])
     
     with col1:
-        if st.button("🗑️ Clear Chat", help="Clear the chat history"):
+        if st.button("Clear Chat", help="Clear the chat history"):
             st.session_state.chat_history = []
             st.rerun()
     
     with col2:
-        if st.button("💾 Export Chat", help="Export chat history"):
+        if st.button("Export Chat", help="Export chat history"):
             export_chat_history()
-    
-    with col3:
-        # Sample queries
-        sample_queries = [
-            "Show me all declined invoices",
-            "Which employees have fraud cases?",
-            "What are the highest expense claims?",
-            "Show me all travel expenses",
-            "List invoices from this month"
-        ]
-        
-        selected_query = st.selectbox(
-            "💡 Try a sample query:",
-            [""] + sample_queries,
-            help="Select a sample query to get started"
-        )
-        
-        if selected_query and st.button("Send Sample Query"):
-            # Add sample query to chat
-            st.session_state.chat_history.append({"role": "user", "content": selected_query})
-            st.rerun()
 
 def export_chat_history():
     """Export chat history to downloadable format"""
@@ -176,7 +155,7 @@ def export_chat_history():
     
     # Create download button
     st.download_button(
-        label="📥 Download Chat History",
+        label="Download Chat History",
         data=export_content,
         file_name="chat_history.md",
         mime="text/markdown"
@@ -185,7 +164,7 @@ def export_chat_history():
 # Advanced query features
 def render_advanced_features():
     """Render advanced chatbot features"""
-    st.subheader("🔧 Advanced Features")
+    st.subheader("Advanced Features")
     
     with st.expander("Filter Options"):
         col1, col2 = st.columns(2)
