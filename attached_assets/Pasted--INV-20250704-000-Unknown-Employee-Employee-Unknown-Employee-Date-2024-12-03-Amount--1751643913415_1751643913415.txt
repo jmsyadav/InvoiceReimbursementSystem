@@ -1,0 +1,127 @@
+📄 INV-20250704-000 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-03
+
+Amount: ₹770.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice contains alcoholic beverages (Royal Stag Whisky) and the total amount is ₹770.0. After removing the alcohol amount (₹300), the eligible meal amount is ₹470. Since ₹470 is greater than the meal policy limit of ₹200, the status is Partially Reimbursed for ₹200.
+
+📄 INV-20250704-001 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-03
+
+Amount: ₹607.7
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹607.7 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.
+
+📄 INV-20250704-002 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-13
+
+Amount: ₹374.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹374.0 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.
+
+📄 INV-20250704-003 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-13
+
+Amount: ₹88.0
+
+Type: meal
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹88.0 is less than the meal policy limit ₹200. According to the policy, reimbursement for meals is allowed when traveling for work or attending business meetings, and the limit for food reimbursement is ₹200 per meal. Therefore, the employee is eligible for full reimbursement of ₹88.0.
+
+📄 INV-20250704-004 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-23
+
+Amount: ₹440.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹440.0 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.
+
+📄 INV-20250704-005 - Avinash
+
+Employee: Avinash
+
+Date: 2024-12-26
+
+Amount: ₹1100.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹1100.0 exceeds the meal policy limit of ₹200. The eligible amount for reimbursement is ₹200, as per the policy.
+
+📄 INV-20250704-006 - Shivam
+
+Employee: Shivam
+
+Date: 2024-12-26
+
+Amount: ₹90.0
+
+Type: meal
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹90.0 is less than the meal policy limit ₹200. According to the policy, all reimbursements must be supported by original receipts and submitted within 30 days of the expense incurred. The invoice contains an original receipt and meets the submission requirements. Therefore, the reimbursement status is Fully Reimbursed.
+
+📄 INV-20250704-007 - Hardhik
+
+Employee: Hardhik
+
+Date: 2024-12-07
+
+Amount: ₹754.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+✅ No Fraud
+
+Reason: The invoice amount ₹754.0 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.

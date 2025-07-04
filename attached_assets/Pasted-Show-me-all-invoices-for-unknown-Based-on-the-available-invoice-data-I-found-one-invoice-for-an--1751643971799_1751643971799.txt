@@ -1,0 +1,43 @@
+Show me all invoices for unknown
+
+Based on the available invoice data, I found one invoice for an unknown employee. Here are the details of the invoice:
+
+Invoice ID: INV-20250704-000 Employee: Unknown Employee Amount: Rs 770.00 Type: meal Status: Partially Reimbursed Date: 2024-12-03 Reason: No reason provided Relevance Score: 0.00
+
+This is the only invoice I found for an unknown employee. If you need any further information or would like to know the total amount of all invoices, please let me know.
+
+Show me all invoices for unknown employee
+
+Based on the available invoice data, I found two invoices for an unknown employee. Here are the details of the invoices:
+
+Invoice 1: ID: INV-20250704-002 Employee: Unknown Employee Amount: Rs 374.00 Type: meal Status: Partially Reimbursed Date: 2024-12-13 Reason: No reason provided Relevance Score: 0.00
+
+Invoice 2: ID: INV-20250704-000 Employee: Unknown Employee Amount: Rs 770.00 Type: meal Status: Partially Reimbursed Date: 2024-12-03 Reason: No reason provided Relevance Score: 0.00
+
+These are the only two invoices I found for an unknown employee. If you need any further information or would like to know the total amount of all invoices, please let me know.
+
+Show me all invoices for unknown employee
+
+Based on the available invoice data, I found two invoices for an unknown employee. Here are the details of the invoices:
+
+Invoice 1: ID: INV-20250704-002 Employee: Unknown Employee Amount: Rs 374.00 Type: meal Status: Partially Reimbursed Date: 2024-12-13 Reason: No reason provided Relevance Score: 0.00
+
+Invoice 2: ID: INV-20250704-000 Employee: Unknown Employee Amount: Rs 770.00 Type: meal Status: Partially Reimbursed Date: 2024-12-03 Reason: No reason provided Relevance Score: 0.00
+
+These are the only two invoices I found for an unknown employee. If you need any further information or would like to know the total amount of all invoices, please let me know.
+
+Show me all invoices
+
+Based on the available invoice data, I found five invoices in total. Here are the details of all the invoices:
+
+Invoice 1: ID: INV-20250704-005 Employee: Avinash Amount: Rs 1,100.00 Type: meal Status: Partially Reimbursed Date: 2024-12-26 Reason: No reason provided Relevance Score: 0.00
+
+Invoice 2: ID: INV-20250704-003 Employee: Unknown Employee Amount: Rs 88.00 Type: meal Status: Fully Reimbursed Date: 2024-12-13 Reason: No reason provided Relevance Score: 0.00
+
+Invoice 3: ID: INV-20250704-001 Employee: Rani Amount: Rs 9,899.00 Type: travel Status: Declined Date: 2024-07-25 Reason: No reason provided Fraud Alert: Fraud detected Relevance Score: 0.00
+
+Invoice 4: ID: INV-20250704-002 Employee: Unknown Employee Amount: Rs 374.00 Type: meal Status: Partially Reimbursed Date: 2024-12-13 Reason: No reason provided Relevance Score: 0.00
+
+Invoice 5: ID: INV-20250704-007 Employee: Sunil Amount: Rs 2,100.00 Type: travel Status: Declined Date: 2024-08-17 Reason: No reason provided Fraud Alert: Fraud detected Relevance Score: 0.00
+
+If you need any further information or would like to know the total amount of all invoices, please let me know.

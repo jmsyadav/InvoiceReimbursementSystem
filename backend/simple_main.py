@@ -107,22 +107,40 @@ def extract_filters_from_natural_language(query: str) -> Dict[str, Any]:
     ]
     
     # Known employee names to match against
-    known_employees = ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash']
+    known_employees = ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash', 'hardhik', 'shivam']
     
-    for pattern in employee_patterns:
-        match = re.search(pattern, query_lower)
-        if match:
-            employee_name = match.group(1).lower()
-            if employee_name in known_employees:
-                filters["employee_name"] = employee_name.title()
-                break
+    # Check for "Unknown Employee" variations first
+    unknown_patterns = [
+        r"unknown\s+employee",
+        r"employee\s+unknown",
+        r"invoices?\s+for\s+unknown",
+        r"unknown\s+invoices?",
+        r"invoices?\s+by\s+unknown",
+        r"all\s+invoices?\s+for\s+unknown",
+        r"show\s+(?:me\s+)?(?:all\s+)?invoices?\s+for\s+unknown"
+    ]
     
-    # Direct name matching if no pattern found
+    for pattern in unknown_patterns:
+        if re.search(pattern, query_lower):
+            filters["employee_name"] = "Unknown Employee"
+            break
+    
+    # If no unknown employee pattern found, check for known employees
     if "employee_name" not in filters:
-        for name in known_employees:
-            if name in query_lower:
-                filters["employee_name"] = name.title()
-                break
+        for pattern in employee_patterns:
+            match = re.search(pattern, query_lower)
+            if match:
+                employee_name = match.group(1).lower()
+                if employee_name in known_employees:
+                    filters["employee_name"] = employee_name.title()
+                    break
+        
+        # Direct name matching if no pattern found
+        if "employee_name" not in filters:
+            for name in known_employees:
+                if name in query_lower:
+                    filters["employee_name"] = name.title()
+                    break
     
     # Extract status
     if "declined" in query_lower or "rejected" in query_lower:
@@ -239,7 +257,7 @@ async def store_invoice_in_qdrant(invoice_data: dict):
     except Exception as e:
         print(f"❌ Error storing invoice in Qdrant: {e}")
 
-async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, limit: int = 5) -> List[Dict[str, Any]]:
+async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, limit: int = 20) -> List[Dict[str, Any]]:
     """Search invoices in Qdrant vector database"""
     if not qdrant_client:
         print("⚠️ Qdrant client not initialized, falling back to local search")
@@ -860,7 +878,8 @@ async def chatbot_query(request: ChatbotRequest):
         
         # Perform vector search on invoice data using Qdrant
         # For employee-specific queries, increase limit to get all invoices
-        search_limit = 20 if any(name in query.lower() for name in ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash']) else 5
+        employee_keywords = ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash', 'hardhik', 'shivam', 'unknown']
+        search_limit = 20 if any(name in query.lower() for name in employee_keywords) else 10
         relevant_invoices = await search_invoices_in_qdrant(query, filters, limit=search_limit)
         
         # Build context from retrieved invoices
