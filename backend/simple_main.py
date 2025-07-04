@@ -80,6 +80,13 @@ async def initialize_qdrant():
                 field_schema=PayloadSchemaType.BOOL
             )
             
+            # Create index for reimbursement_status field
+            qdrant_client.create_payload_index(
+                collection_name=COLLECTION_NAME,
+                field_name="reimbursement_status",
+                field_schema=PayloadSchemaType.KEYWORD
+            )
+            
             print(f"✅ Created payload indexes for filtering")
             
         except Exception as e:
@@ -282,6 +289,10 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
                 elif key == "fraud_detected" and value is not None:
                     filter_conditions.append(
                         FieldCondition(key="fraud_detected", match=MatchValue(value=value))
+                    )
+                elif key == "reimbursement_status" and value:
+                    filter_conditions.append(
+                        FieldCondition(key="reimbursement_status", match=MatchValue(value=value))
                     )
         
         # Build filter

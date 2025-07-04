@@ -118,6 +118,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Fixed duplicate invoice results in chatbot - implemented deduplication logic to ensure unique results and removed Amount Distribution feature from results view for cleaner interface
 - July 04, 2025. Fixed critical chatbot search bugs - enhanced "Unknown Employee" pattern matching, increased search limits to 20 for all employee queries, synchronized Qdrant vector storage with proper filtering, and eliminated data contamination issues for consistent search results
 - July 04, 2025. Major project cleanup - fixed app.py backend import to use simple_main, removed unused backend services/utils/database folders (~15 files), removed unused frontend files (chatbot.py, dashboard.py, invoice_analyzer.py), cleaned attached_assets folder to keep only 5 essential files, streamlined architecture to 70% smaller codebase
+- July 04, 2025. Fixed critical chatbot calculation bug - added missing reimbursement_status filter support and Qdrant index configuration to enable proper status-based searching and accurate reimbursement amount calculations
 
 ## User Preferences
 
