@@ -131,6 +131,11 @@ async def analyze_invoices(
                                 # Extract employee name from PDF content or filename
                                 employee_name = extract_employee_name(pdf_text, pdf_filename)
                                 
+                                # Refine invoice type based on PDF content
+                                refined_type = detect_invoice_type_from_content(pdf_text, pdf_filename)
+                                if refined_type != "general":
+                                    invoice_type = refined_type
+                                
                                 # Extract amount from PDF content
                                 extracted_amount = extract_amount(pdf_text, base_amount)
                                 # Use extracted amount or fallback to calculated amount
@@ -284,6 +289,44 @@ async def get_processed_invoices():
         "count": len(invoices_storage)
     }
 
+def detect_invoice_type_from_content(pdf_text: str, filename: str) -> str:
+    """Detect invoice type from PDF content and filename"""
+    import re
+    
+    # Convert to lowercase for matching
+    text_lower = pdf_text.lower()
+    filename_lower = filename.lower()
+    
+    # Meal/Food indicators
+    meal_indicators = [
+        r'restaurant', r'food', r'meal', r'lunch', r'dinner', r'breakfast', r'cafe', r'coffee', r'tea', r'burger', r'pizza', r'rice', r'curry', r'beverage', r'drink', r'menu', r'table', r'receipt.*food', r'west hollywood', r'manish.*restaurant', r'manish.*resort'
+    ]
+    
+    # Travel indicators
+    travel_indicators = [
+        r'flight', r'airline', r'airport', r'boarding', r'seat', r'aircraft', r'departure', r'arrival', r'terminal', r'gate', r'air.*india', r'ticket.*travel', r'journey', r'passenger.*details', r'eticker', r'pnr', r'booking.*reference', r'travel.*agency', r'bus.*ticket', r'train.*ticket'
+    ]
+    
+    # Cab/Transport indicators
+    cab_indicators = [
+        r'cab', r'taxi', r'uber', r'ola', r'driver', r'ride', r'pickup', r'drop', r'transport', r'vehicle', r'car.*hire', r'fare', r'trip.*invoice', r'driver.*trip', r'customer.*ride', r'mobile.*number.*89', r'ka.*\d+.*\d+', r'toll.*convenience', r'airport.*charges'
+    ]
+    
+    # Check content for indicators
+    for indicator in meal_indicators:
+        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
+            return "meal"
+    
+    for indicator in travel_indicators:
+        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
+            return "travel"
+    
+    for indicator in cab_indicators:
+        if re.search(indicator, text_lower) or re.search(indicator, filename_lower):
+            return "cab"
+    
+    return "general"
+
 def extract_employee_name(pdf_text: str, filename: str) -> str:
     """Extract employee name from PDF content or filename with enhanced patterns"""
     import re
@@ -344,9 +387,15 @@ def extract_employee_name(pdf_text: str, filename: str) -> str:
     clean_filename = re.sub(r'(invoice|bill|receipt|book|template|\d+)', '', clean_filename, flags=re.IGNORECASE)
     clean_filename = clean_filename.strip()
     
-    # If filename extraction yields a reasonable name
+    # If filename extraction yields a reasonable name, validate it too
     if clean_filename and len(clean_filename.split()) <= 3:
-        return clean_filename.title()
+        filename_words = clean_filename.lower().split()
+        # Check against invalid names list
+        invalid_names = ['car', 'air', 'bus', 'train', 'cab', 'auto', 'taxi', 'food', 'meal', 'lunch', 'dinner', 'breakfast', 'tea', 'coffee', 'water', 'juice', 'bill', 'total', 'sub', 'grand', 'final', 'net', 'gross', 'tax', 'gst', 'cgst', 'sgst', 'service', 'charges', 'fees', 'amount', 'price', 'cost', 'fare', 'rate', 'per', 'day', 'night', 'hour', 'minute', 'second', 'week', 'month', 'year', 'time', 'date', 'today', 'tomorrow', 'yesterday', 'morning', 'evening', 'afternoon', 'night', 'early', 'late', 'fast', 'slow', 'quick', 'good', 'bad', 'best', 'worst', 'high', 'low', 'big', 'small', 'large', 'huge', 'tiny', 'mini', 'max', 'min', 'new', 'old', 'fresh', 'hot', 'cold', 'warm', 'cool', 'lta', 'hra', 'pf', 'esi', 'leave', 'travel', 'allowance', 'policy', 'baggage', 'allowed', 'carry', 'bag', 'upto', 'kilograms', 'weight', 'limit', 'excess', 'free', 'complimentary', 'care', 'help', 'support', 'contact', 'phone', 'mobile', 'email', 'address', 'city', 'state', 'country', 'pin', 'code', 'gst', 'pan', 'tan', 'cin', 'reg', 'no', 'id', 'ref', 'invoice', 'receipt', 'bill', 'ticket']
+        
+        # Only return filename if it's not in invalid names
+        if clean_filename.lower() not in invalid_names and not any(word in invalid_names for word in filename_words):
+            return clean_filename.title()
     
     return "Unknown Employee"
 
@@ -371,16 +420,27 @@ Invoice Type: {invoice_type}
 Amount: ₹{amount}
 Invoice Content: {invoice_text[:1000]}...
 
-ANALYSIS INSTRUCTIONS:
-1. Compare the invoice against the HR policy rules
-2. Consider amount limits, expense categories, and approval requirements
-3. Determine reimbursement status: "Fully Reimbursed", "Partially Reimbursed", or "Declined"
-4. Provide a clear reason for the decision
+CRITICAL ANALYSIS RULES:
+1. MATHEMATICAL ACCURACY: Always compare numbers correctly:
+   - If ₹{amount} ≤ policy limit → Status = "Fully Reimbursed"
+   - If ₹{amount} > policy limit → Status = "Partially Reimbursed" (specify exact amount)
+   - Example: ₹88 is LESS than ₹200, so it should be "Fully Reimbursed"
+
+2. EXPENSE CATEGORIES: Check if expense type is allowed by policy
+3. RESTRICTED ITEMS: Decline if contains alcohol, personal items, etc.
+4. SUBMISSION REQUIREMENTS: Check if proper documentation is provided
+
+ANALYSIS STEPS:
+1. Identify the expense category (travel, meal, cab, etc.)
+2. Check policy limits for that category
+3. Compare ₹{amount} with the limit using correct math
+4. Check for restricted items in invoice content
+5. Determine final status and provide clear reasoning
 
 OUTPUT FORMAT (JSON):
 {{
     "status": "Fully Reimbursed|Partially Reimbursed|Declined",
-    "reason": "Clear explanation of the decision based on policy"
+    "reason": "Clear explanation with correct mathematical comparison and policy reference"
 }}
 
 Respond only with valid JSON.
