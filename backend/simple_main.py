@@ -167,9 +167,10 @@ async def store_invoice_in_qdrant(invoice_data: dict):
         
         embedding = create_basic_embedding(content_text)
         
-        # Create point for Qdrant
+        # Create point for Qdrant (convert string ID to hash for Qdrant compatibility)
+        point_id = abs(hash(invoice_data['invoice_id'])) % (2**63)  # Convert to positive integer
         point = PointStruct(
-            id=invoice_data['invoice_id'],
+            id=point_id,
             vector=embedding,
             payload={
                 "employee_name": invoice_data.get('employee_name', 'Unknown'),
