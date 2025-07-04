@@ -108,6 +108,10 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Initial setup
 - July 04, 2025. Fixed critical fraud detection bug - improved travel date validation to properly identify impossible travel dates while allowing legitimate travel scenarios
 - July 04, 2025. Implemented complete RAG LLM Chatbot with vector search, metadata filtering, conversation history, and markdown response formatting using Groq API
+- July 04, 2025. Fixed duplicate invoice storage issue - implemented comprehensive deduplication logic to prevent storage accumulation
+- July 04, 2025. Updated RAG chatbot to use plain text responses instead of markdown formatting for better readability
+- July 04, 2025. Cleaned up interface by removing all emojis and sample query prompts for professional appearance
+- July 04, 2025. Fixed chatbot date display issue - resolved missing invoice_date field in source data formatting
 
 ## User Preferences
 

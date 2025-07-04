@@ -654,8 +654,9 @@ async def chatbot_query(request: ChatbotRequest):
             {
                 "invoice_id": inv["invoice_id"],
                 "employee_name": inv["employee_name"],
+                "invoice_date": inv.get("invoice_date", "Unknown"),
                 "amount": inv["amount"],
-                "status": inv["reimbursement_status"],
+                "reimbursement_status": inv["reimbursement_status"],
                 "relevance_score": inv.get("score", 0.0)
             }
             for inv in relevant_invoices[:3]  # Top 3 most relevant
