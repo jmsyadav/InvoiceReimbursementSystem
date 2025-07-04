@@ -17,11 +17,15 @@ class MongoDBClient:
     async def initialize(self):
         """Initialize MongoDB client connection"""
         try:
-            self.client = MongoClient(self.url)
+            if not self.url:
+                print("MongoDB URL not provided, skipping MongoDB initialization")
+                return
+                
+            self.client = MongoClient(self.url, serverSelectionTimeoutMS=5000)
             self.database = self.client[self.db_name]
             self.collection = self.database[self.collection_name]
             
-            # Test connection
+            # Test connection with timeout
             self.client.server_info()
             print("Connected to MongoDB")
             
@@ -32,10 +36,16 @@ class MongoDBClient:
             self.collection.create_index("fraud_detected")
             
         except Exception as e:
-            raise Exception(f"Failed to initialize MongoDB client: {str(e)}")
+            print(f"MongoDB connection failed: {str(e)}")
+            # Don't raise exception - allow app to continue without MongoDB
+            self.client = None
     
     async def store_invoice_metadata(self, invoices: List[Dict[str, Any]]):
         """Store invoice metadata in MongoDB"""
+        if not self.client:
+            print("MongoDB not connected, skipping metadata storage")
+            return
+            
         try:
             documents = []
             
@@ -77,7 +87,7 @@ class MongoDBClient:
                 documents.append(document)
             
             # Insert documents
-            if documents:
+            if documents and self.collection is not None:
                 result = self.collection.insert_many(documents)
                 print(f"Inserted {len(result.inserted_ids)} invoice records")
                 
@@ -86,11 +96,15 @@ class MongoDBClient:
     
     async def get_all_invoices(self) -> List[Dict[str, Any]]:
         """Get all invoices from MongoDB"""
+        if not self.client:
+            return []
+            
         try:
             invoices = list(self.collection.find({}, {"_id": 0}).sort("created_at", -1))
             return invoices
         except Exception as e:
-            raise Exception(f"Failed to retrieve invoices: {str(e)}")
+            print(f"Failed to retrieve invoices: {str(e)}")
+            return []
     
     async def get_invoices_by_employee(self, employee_name: str) -> List[Dict[str, Any]]:
         """Get invoices for a specific employee"""

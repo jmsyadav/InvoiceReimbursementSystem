@@ -1,8 +1,9 @@
 import os
-from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any
 import numpy as np
 from ..database.qdrant_client import QdrantClient
+import hashlib
+import re
 
 class VectorService:
     """Service for handling vector embeddings and similarity search"""
@@ -12,16 +13,48 @@ class VectorService:
         self.qdrant_client = QdrantClient()
         self.collection_name = "invoice_analysis"
     
+    def _create_basic_embedding(self, text: str) -> List[float]:
+        """Create a basic embedding using simple text features"""
+        # Clean and tokenize text
+        text = re.sub(r'[^\w\s]', '', text.lower())
+        words = text.split()
+        
+        # Create a simple feature vector
+        features = []
+        
+        # Text length features
+        features.append(len(text) / 1000.0)  # Normalized text length
+        features.append(len(words) / 100.0)  # Normalized word count
+        
+        # Word frequency features for common invoice terms
+        invoice_terms = ['invoice', 'amount', 'date', 'employee', 'reimbursement', 'travel', 'meal', 'expense', 'bill', 'payment']
+        for term in invoice_terms:
+            features.append(sum(1 for word in words if term in word) / len(words) if words else 0)
+        
+        # Numeric features
+        numbers = re.findall(r'\d+', text)
+        features.append(len(numbers) / 10.0)  # Normalized number count
+        if numbers:
+            features.append(max(float(n) for n in numbers) / 10000.0)  # Max number normalized
+        else:
+            features.append(0.0)
+        
+        # Pad or truncate to 128 dimensions
+        while len(features) < 128:
+            features.append(0.0)
+        
+        return features[:128]
+    
     async def initialize(self):
         """Initialize the embedding model and vector store"""
         try:
-            # Use a lightweight, free embedding model
-            self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+            # Use basic embeddings
+            self.embedding_model = "basic_embeddings"
             
             # Initialize Qdrant collection
             await self.qdrant_client.create_collection(
                 collection_name=self.collection_name,
-                vector_size=384  # Dimension of all-MiniLM-L6-v2
+                vector_size=128  # Smaller dimension for basic embeddings
             )
             
         except Exception as e:
@@ -40,7 +73,7 @@ class VectorService:
                 content = self._create_embedding_content(result)
                 
                 # Generate embedding
-                embedding = self.embedding_model.encode(content).tolist()
+                embedding = self._create_basic_embedding(content)
                 
                 # Prepare metadata
                 metadata = {
@@ -100,10 +133,10 @@ class VectorService:
         """
         try:
             # Generate query embedding
-            query_embedding = self.embedding_model.encode(query).tolist()
+            query_embedding = self._create_basic_embedding(query)
             
             # Prepare Qdrant filters
-            qdrant_filters = None
+            qdrant_filters = {}
             if filters:
                 qdrant_filters = self._build_qdrant_filters(filters)
             
@@ -163,7 +196,7 @@ class VectorService:
         if conditions:
             return {"must": conditions}
         
-        return None
+        return {}
     
     async def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the vector collection"""

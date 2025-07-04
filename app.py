@@ -14,10 +14,24 @@ import time
 def start_backend():
     """Start the FastAPI backend server in a separate thread"""
     try:
-        subprocess.run(["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"], 
-                      check=True, capture_output=True)
+        # Use Popen instead of run for non-blocking execution
+        process = subprocess.Popen(
+            ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Wait a bit to check if process started successfully
+        time.sleep(3)
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            print(f"Backend failed to start: {stderr}")
+        else:
+            print("Backend server started successfully")
+            
     except Exception as e:
-        st.error(f"Failed to start backend: {e}")
+        print(f"Failed to start backend: {e}")
 
 def main():
     st.set_page_config(
