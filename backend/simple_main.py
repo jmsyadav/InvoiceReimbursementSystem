@@ -69,39 +69,53 @@ async def analyze_invoices(
             invoice_content = await invoice_file.read()
             
             # Check if it's a ZIP file
-            if invoice_file.filename.endswith('.zip'):
+            if invoice_file.filename and invoice_file.filename.endswith('.zip'):
                 # Extract and process individual PDFs from ZIP
                 try:
                     import zipfile
                     import io
                     
+                    # Determine invoice type based on ZIP file name first
+                    zip_name = invoice_file.filename.lower() if invoice_file.filename else ""
+                    if 'meal' in zip_name:
+                        invoice_type = "meal"
+                        base_amount = 850
+                    elif 'travel' in zip_name or 'flight' in zip_name:
+                        invoice_type = "travel"
+                        base_amount = 15000
+                    elif 'cab' in zip_name or 'transport' in zip_name:
+                        invoice_type = "transportation"
+                        base_amount = 1200
+                    else:
+                        invoice_type = "general"
+                        base_amount = 1000
+                    
                     with zipfile.ZipFile(io.BytesIO(invoice_content)) as zip_ref:
                         for pdf_filename in zip_ref.namelist():
-                            if pdf_filename.endswith('.pdf'):
+                            if pdf_filename and pdf_filename.endswith('.pdf'):
                                 pdf_content = zip_ref.read(pdf_filename)
                                 
-                                # Extract employee name from filename or content
-                                employee_name = pdf_filename.replace('.pdf', '').replace('_', ' ').title()
-                                if 'invoice' in employee_name.lower():
-                                    employee_name = employee_name.replace('Invoice', '').strip()
+                                # Extract text from PDF
+                                pdf_text = ""
+                                try:
+                                    import pdfplumber
+                                    import io
+                                    
+                                    with pdfplumber.open(io.BytesIO(pdf_content)) as pdf:
+                                        for page in pdf.pages:
+                                            page_text = page.extract_text()
+                                            if page_text:
+                                                pdf_text += page_text + "\n"
+                                except Exception as e:
+                                    pdf_text = f"Could not extract text from PDF: {str(e)}"
                                 
-                                # Determine invoice type based on ZIP file name
-                                zip_name = invoice_file.filename.lower()
-                                if 'meal' in zip_name:
-                                    invoice_type = "meal"
-                                    base_amount = 850
-                                elif 'travel' in zip_name or 'flight' in zip_name:
-                                    invoice_type = "travel"
-                                    base_amount = 15000
-                                elif 'cab' in zip_name or 'transport' in zip_name:
-                                    invoice_type = "transportation"
-                                    base_amount = 1200
-                                else:
-                                    invoice_type = "general"
-                                    base_amount = 1000
+                                # Extract employee name from PDF content or filename
+                                employee_name = extract_employee_name(pdf_text, pdf_filename)
                                 
-                                # Create analysis result
-                                amount = base_amount + (invoice_counter * 150)
+                                # Extract amount from PDF content
+                                extracted_amount = extract_amount(pdf_text, base_amount)
+                                # Use extracted amount or fallback to calculated amount
+                                amount = extracted_amount if extracted_amount != base_amount else base_amount + (invoice_counter * 150)
                                 
                                 # Determine reimbursement status based on amount and type
                                 if invoice_type == "meal" and amount > 1000:
@@ -242,6 +256,72 @@ async def get_processed_invoices():
         "invoices": invoices_storage,
         "count": len(invoices_storage)
     }
+
+def extract_employee_name(pdf_text: str, filename: str) -> str:
+    """Extract employee name from PDF content or filename"""
+    import re
+    
+    # Try to extract from PDF content first
+    name_patterns = [
+        r'Employee[:\s]+([A-Za-z\s]+)',
+        r'Name[:\s]+([A-Za-z\s]+)',
+        r'Passenger[:\s]+([A-Za-z\s]+)',
+        r'Customer[:\s]+([A-Za-z\s]+)',
+        r'Mr\.?\s+([A-Za-z\s]+)',
+        r'Ms\.?\s+([A-Za-z\s]+)',
+        r'([A-Z][a-z]+\s+[A-Z][a-z]+)'  # Two capitalized words
+    ]
+    
+    for pattern in name_patterns:
+        match = re.search(pattern, pdf_text, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            # Clean up common noise words
+            noise_words = ['invoice', 'bill', 'receipt', 'total', 'amount', 'date']
+            name_words = [word for word in name.split() if word.lower() not in noise_words]
+            if len(name_words) >= 1 and len(name_words) <= 3:
+                return ' '.join(name_words).title()
+    
+    # Fallback to filename extraction
+    clean_filename = filename.replace('.pdf', '').replace('_', ' ').replace('-', ' ')
+    # Remove common file prefixes/suffixes
+    clean_filename = re.sub(r'(invoice|bill|receipt|book|template)', '', clean_filename, flags=re.IGNORECASE)
+    clean_filename = clean_filename.strip()
+    
+    return clean_filename.title() if clean_filename else f"Employee_{filename[:10]}"
+
+def extract_amount(pdf_text: str, base_amount: float) -> float:
+    """Extract amount from PDF content"""
+    import re
+    
+    # Look for currency amounts in various formats
+    amount_patterns = [
+        r'Total[:\s]*₹?\s*([0-9,]+\.?\d*)',
+        r'Amount[:\s]*₹?\s*([0-9,]+\.?\d*)',
+        r'₹\s*([0-9,]+\.?\d*)',
+        r'Rs\.?\s*([0-9,]+\.?\d*)',
+        r'INR\s*([0-9,]+\.?\d*)',
+        r'([0-9,]+\.?\d*)\s*INR',
+        r'Total:\s*([0-9,]+\.?\d*)',
+        r'Bill Amount[:\s]*([0-9,]+\.?\d*)'
+    ]
+    
+    for pattern in amount_patterns:
+        matches = re.findall(pattern, pdf_text, re.IGNORECASE)
+        if matches:
+            for match in matches:
+                try:
+                    # Clean and convert amount
+                    clean_amount = match.replace(',', '').strip()
+                    amount = float(clean_amount)
+                    # Only consider reasonable amounts (between 1 and 1,000,000)
+                    if 1 <= amount <= 1000000:
+                        return amount
+                except ValueError:
+                    continue
+    
+    # Return base amount if no valid amount found
+    return base_amount
 
 if __name__ == "__main__":
     import uvicorn

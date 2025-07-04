@@ -1,0 +1,181 @@
+📊 View Results
+
+📋 All Invoices
+
+
+📈 Analytics
+
+
+🚨 Fraud Detection
+
+All Processed Invoices
+Filter by Employee
+
+All
+Filter by Status
+
+All
+Filter by Fraud
+
+All
+Showing 10 of 10 invoices
+
+📄 INV-20250704-000 - Book 1
+
+Employee: Book 1
+
+Date: 2025-07-04
+
+Amount: ₹15000
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-001 - Book 2
+
+Employee: Book 2
+
+Date: 2025-07-04
+
+Amount: ₹15150
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-002 - Book 3
+
+Employee: Book 3
+
+Date: 2025-07-04
+
+Amount: ₹15300
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-003 - Book 4
+
+Employee: Book 4
+
+Date: 2025-07-04
+
+Amount: ₹15450
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-004 - Book 5
+
+Employee: Book 5
+
+Date: 2025-07-04
+
+Amount: ₹15600
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-005 - Book 6 (1)
+
+Employee: Book 6 (1)
+
+Date: 2025-07-04
+
+Amount: ₹15750
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-006 - Book 7
+
+Employee: Book 7
+
+Date: 2025-07-04
+
+Amount: ₹15900
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-007 - Book 8
+
+Employee: Book 8
+
+Date: 2025-07-04
+
+Amount: ₹16050
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-008 - Book 9
+
+Employee: Book 9
+
+Date: 2025-07-04
+
+Amount: ₹16200
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
+
+📄 INV-20250704-009 - Lta Bill Template 1
+
+Employee: Lta Bill Template 1
+
+Date: 2025-07-04
+
+Amount: ₹16350
+
+Type: general
+
+Status: Fully Reimbursed
+
+✅ No Fraud
+
+Reason: Meets all policy requirements
