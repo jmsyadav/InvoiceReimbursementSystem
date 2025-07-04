@@ -183,19 +183,19 @@ def build_context_from_invoices(invoices: List[Dict[str, Any]]) -> str:
     context = "Here are the relevant invoices:\n\n"
     
     for i, invoice in enumerate(invoices, 1):
-        context += f"**Invoice {i}:**\n"
-        context += f"- ID: {invoice.get('invoice_id', 'N/A')}\n"
-        context += f"- Employee: {invoice.get('employee_name', 'Unknown')}\n"
-        context += f"- Amount: ₹{invoice.get('amount', 0):,.2f}\n"
-        context += f"- Type: {invoice.get('invoice_type', 'Unknown')}\n"
-        context += f"- Status: {invoice.get('reimbursement_status', 'Unknown')}\n"
-        context += f"- Date: {invoice.get('invoice_date', 'Unknown')}\n"
-        context += f"- Reason: {invoice.get('reason', 'No reason provided')}\n"
+        context += f"Invoice {i}:\n"
+        context += f"ID: {invoice.get('invoice_id', 'N/A')}\n"
+        context += f"Employee: {invoice.get('employee_name', 'Unknown')}\n"
+        context += f"Amount: Rs {invoice.get('amount', 0):,.2f}\n"
+        context += f"Type: {invoice.get('invoice_type', 'Unknown')}\n"
+        context += f"Status: {invoice.get('reimbursement_status', 'Unknown')}\n"
+        context += f"Date: {invoice.get('invoice_date', 'Unknown')}\n"
+        context += f"Reason: {invoice.get('reason', 'No reason provided')}\n"
         
         if invoice.get('fraud_detected'):
-            context += f"- **Fraud Alert**: {invoice.get('fraud_reason', 'Fraud detected')}\n"
+            context += f"Fraud Alert: {invoice.get('fraud_reason', 'Fraud detected')}\n"
         
-        context += f"- Relevance: {invoice.get('score', 0.0):.2f}\n\n"
+        context += f"Relevance Score: {invoice.get('score', 0.0):.2f}\n\n"
     
     return context
 
@@ -214,20 +214,21 @@ async def generate_rag_response(query: str, context: str, conversation_history: 
 
 {conv_context}
 
-**Current Query:** {query}
+Current Query: {query}
 
-**Available Invoice Data:**
+Available Invoice Data:
 {context}
 
-**Instructions:**
+Instructions:
 1. Provide accurate information based only on the provided invoice data
-2. Use markdown formatting for better readability
+2. Use natural language in plain text format - NO markdown, NO formatting symbols, NO bold text
 3. Include specific details like amounts, employee names, and dates when relevant
 4. If asked about totals or summaries, calculate from the provided data
 5. If no relevant data is found, clearly state this
 6. Be conversational and helpful
+7. Write in simple, clear sentences without any special formatting
 
-**Response:**"""
+Response:"""
 
     try:
         # Use Groq API for response generation
@@ -249,7 +250,7 @@ async def generate_rag_response(query: str, context: str, conversation_history: 
                 "messages": [
                     {
                         "role": "system",
-                        "content": "You are a helpful assistant for invoice analysis. Always respond in markdown format."
+                        "content": "You are a helpful assistant for invoice analysis. Always respond in natural language plain text format without any markdown formatting, symbols, or special characters."
                     },
                     {
                         "role": "user", 
