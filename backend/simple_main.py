@@ -453,18 +453,26 @@ CRITICAL MATHEMATICAL CHECK FOR ₹{amount} ({invoice_type} category):
 
 3. RESTRICTED ITEMS CHECK:
    - ALCOHOL DETECTION: Check if invoice contains alcoholic beverages
-   - Common alcohol terms: "whisky", "wine", "beer", "alcohol", "liquor", "rum", "vodka", "gin", "brandy"
-   - If alcohol found → Status = "Declined", Reason = "Contains alcoholic beverages which are not reimbursable per policy"
+   - Common alcohol terms: "whisky", "wine", "beer", "alcohol", "liquor", "rum", "vodka", "gin", "brandy", "stag"
+   - If alcohol found → Calculate alcohol amount from line items
+   - Subtract alcohol amount from total to get eligible meal amount
+   - Apply meal policy limit (₹200) to eligible meal amount only
    - Policy states: "Alcoholic beverages are not reimbursable"
+   - Example: ₹770 total with ₹300 alcohol → Eligible ₹470 → Reimburse ₹200 (meal limit)
 
 4. SUBMISSION REQUIREMENTS: Check if proper documentation is provided
 
 ANALYSIS STEPS:
-1. ALCOHOL CHECK: Search invoice content for alcohol terms (whisky, wine, beer, alcohol, liquor, rum, vodka, gin, brandy, stag)
-   - If found → Status = "Declined", Reason = "Contains alcoholic beverages which are not reimbursable per policy"
+1. ALCOHOL CHECK: If invoice contains alcohol items (whisky, wine, beer, alcohol, liquor, rum, vodka, gin, brandy, stag):
+   - Calculate alcohol amount from line items
+   - Calculate eligible meal amount = Total amount - Alcohol amount
+   - Apply meal policy limit (₹200) to the eligible meal amount only
+   - Example: "2 Royal Stag Whisky 150.00 300.00" + "2 Biriyani 200.00 400.00" = ₹770 total
+   - Alcohol amount: ₹300, Eligible meal amount: ₹470
+   - Since ₹470 > ₹200 meal limit → Partially Reimbursed ₹200
 2. Identify the expense category: {invoice_type}
 3. Apply CORRECT policy limit based on category
-4. Compare ₹{amount} with the correct limit using accurate math
+4. Compare eligible amount with policy limit using accurate math
 5. Determine final status and provide clear reasoning with correct calculations
 
 OUTPUT FORMAT (JSON):
