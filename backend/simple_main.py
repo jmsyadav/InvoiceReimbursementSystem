@@ -278,11 +278,20 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
             with_payload=True
         )
         
-        # Convert results to expected format
+        # Convert results to expected format and remove duplicates
         results = []
+        seen_invoice_ids = set()
+        
         for result in search_results:
+            invoice_id = result.payload.get("invoice_id", f"ID-{result.id}")
+            
+            # Skip if we've already seen this invoice ID
+            if invoice_id in seen_invoice_ids:
+                continue
+                
+            seen_invoice_ids.add(invoice_id)
             results.append({
-                "invoice_id": result.payload.get("invoice_id", f"ID-{result.id}"),
+                "invoice_id": invoice_id,
                 "employee_name": result.payload.get("employee_name", "Unknown"),
                 "invoice_date": result.payload.get("invoice_date", "Unknown"),
                 "amount": result.payload.get("amount", 0),
@@ -293,7 +302,7 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
                 "similarity_score": result.score
             })
         
-        print(f"✅ Found {len(results)} results in Qdrant")
+        print(f"✅ Found {len(results)} unique results in Qdrant")
         return results
         
     except Exception as e:

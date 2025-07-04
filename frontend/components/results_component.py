@@ -191,9 +191,7 @@ def render_analytics_tab(api_client):
                 employee_stats.columns = ['Invoice Count', 'Total Amount', 'Average Amount', 'Fraud Cases']
                 st.dataframe(employee_stats)
                 
-                # Amount distribution
-                st.subheader("💰 Amount Distribution")
-                st.histogram_chart(df['amount'])
+
                 
                 # Fraud analysis
                 if df['fraud_detected'].sum() > 0:

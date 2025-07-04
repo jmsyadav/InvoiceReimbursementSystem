@@ -115,6 +115,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Fixed chatbot date display issue - resolved missing invoice_date field in source data formatting
 - July 04, 2025. Integrated Qdrant vector store - implemented full vector database integration with automatic invoice storage, semantic search, and metadata filtering while maintaining simplified architecture
 - July 04, 2025. Fixed critical chatbot search bug - enhanced employee name pattern matching and increased search limits to properly return all invoices for specific employees (previously only returning 1 of 3 invoices for Rani, 0 of 2 for Sachin)
+- July 04, 2025. Fixed duplicate invoice results in chatbot - implemented deduplication logic to ensure unique results and removed Amount Distribution feature from results view for cleaner interface
 
 ## User Preferences
 
