@@ -514,6 +514,8 @@ IMPORTANT CALCULATION RULES:
 - Partially Reimbursed = Limited amount based on policy (Meal: ₹200, Travel: ₹2000, Cab: ₹150)
 - Declined = ₹0 reimbursed
 - Always calculate totals accurately using the actual reimbursed amounts
+- ALWAYS include the exact reimbursement reason from the "Reason" field when available
+- For fraud cases, ALWAYS mention the fraud detection reason
 
 {conv_context}
 
@@ -530,8 +532,12 @@ Instructions:
 5. If no relevant data is found, clearly state this
 6. Be conversational and helpful
 7. Write in simple, clear sentences without any special formatting
+8. Include the exact reimbursement reason when available
+9. For fraud cases, clearly state the fraud detection reason
+10. Use natural language in plain text format
 
 Response:"""
+
 
     try:
         # Use Groq API for response generation
