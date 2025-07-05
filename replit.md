@@ -120,6 +120,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Major project cleanup - fixed app.py backend import to use simple_main, removed unused backend services/utils/database folders (~15 files), removed unused frontend files (chatbot.py, dashboard.py, invoice_analyzer.py), cleaned attached_assets folder to keep only 5 essential files, streamlined architecture to 70% smaller codebase
 - July 04, 2025. Fixed critical chatbot calculation bug - added missing reimbursement_status filter support and Qdrant index configuration to enable proper status-based searching and accurate reimbursement amount calculations
 - July 04, 2025. Removed all emojis from frontend - cleaned up professional interface by removing emojis from upload, results, chatbot components and main app for business-focused appearance
+- July 05, 2025. Fixed session isolation bug - implemented proper data clearing when starting new analysis sessions to prevent invoice accumulation across multiple processing sessions with correct Qdrant index creation
 
 ## User Preferences
 

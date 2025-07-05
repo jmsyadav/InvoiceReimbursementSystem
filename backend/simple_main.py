@@ -613,22 +613,22 @@ async def analyze_invoices(
                 qdrant_client.create_payload_index(
                     collection_name=COLLECTION_NAME,
                     field_name="employee_name",
-                    field_schema=models.KeywordIndexParams()
+                    field_schema=models.KeywordIndexParams(type="keyword")
                 )
                 qdrant_client.create_payload_index(
                     collection_name=COLLECTION_NAME,
                     field_name="reimbursement_status",
-                    field_schema=models.KeywordIndexParams()
+                    field_schema=models.KeywordIndexParams(type="keyword")
                 )
                 qdrant_client.create_payload_index(
                     collection_name=COLLECTION_NAME,
                     field_name="invoice_type",
-                    field_schema=models.KeywordIndexParams()
+                    field_schema=models.KeywordIndexParams(type="keyword")
                 )
                 qdrant_client.create_payload_index(
                     collection_name=COLLECTION_NAME,
                     field_name="fraud_detected",
-                    field_schema=models.KeywordIndexParams()
+                    field_schema=models.KeywordIndexParams(type="keyword")
                 )
                 print("✅ Cleared previous session data from Qdrant")
             except Exception as e:
