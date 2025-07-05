@@ -1,4 +1,5 @@
 import requests
+import os
 import streamlit as st
 from typing import List, Dict, Any, Optional
 import time
@@ -6,8 +7,13 @@ import time
 class APIClient:
     """Client for interacting with the FastAPI backend"""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
-        self.base_url = base_url
+    def __init__(self, base_url: str | None = None):
+        # Determine backend URL priority: env var > Streamlit secrets > default localhost
+        if base_url is not None:
+            self.base_url = base_url
+        else:
+            # Prefer environment variable BACKEND_URL; otherwise default to localhost
+            self.base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
         self.session = requests.Session()
         self.session.headers.update({
             "Content-Type": "application/json",
