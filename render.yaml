@@ -7,7 +7,7 @@ services:
     startCommand: "uvicorn backend.simple_main:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.11.0"
       - key: QDRANT_URL
         value: https://d7a50709-8427-48a5-a876-60b922bc058d.europe-west3-0.gcp.cloud.qdrant.io:6333
       - key: QDRANT_API_KEY
