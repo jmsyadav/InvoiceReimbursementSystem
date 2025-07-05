@@ -1,4 +1,4 @@
-# Invoice Reimbursement System
+ # Invoice Reimbursement System
 
 An intelligent Invoice Reimbursement System that analyzes employee expense claims against company policies using Large Language Models (LLMs). The system provides automated invoice processing, fraud detection, and a conversational chatbot interface for querying processed invoices with vector database integration.
 
@@ -284,5 +284,6 @@ Answer in a helpful, professional tone with specific details and source citation
 - **Architecture**: Streamlined single-file backend with modular frontend
 - **LLM Model**: Llama3-8b-8192 via Groq API
 - **Vector Database**: Qdrant with 384-dimensional embeddings
-- **Current Status**: Production-ready with comprehensive testing#   I n v o i c e R e i m b u r s e m e n t S y s t e m  
+- **Current Status**: Production-ready with comprehensive testing#   I n v o i c e R e i m b u r s e m e n t S y s t e m 
+ 
  
