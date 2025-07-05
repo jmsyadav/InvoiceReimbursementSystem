@@ -123,6 +123,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 05, 2025. Fixed session isolation bug - implemented proper data clearing when starting new analysis sessions to prevent invoice accumulation across multiple processing sessions with correct Qdrant index creation
 - July 05, 2025. Identified frontend caching issue - session isolation working correctly (backend properly clears data), but frontend shows cached results from previous session, actual total reimbursed amount from last session was ₹4,000 (2 partially reimbursed invoices at ₹2,000 each)
 - July 05, 2025. Fixed comprehensive Qdrant and chatbot bugs - resolved null payload errors, improved embedding algorithm for better semantic matching, fixed boolean fraud_detected index, implemented proper session clearing with scroll/delete, added fallback to local storage when Qdrant is empty, and enhanced query type detection for consistent search results
+- July 05, 2025. Completed comprehensive README.md documentation - added detailed API endpoints section, comprehensive technical details explaining LLM/embedding model choices and vector store integration, complete prompt design documentation with example prompts for invoice analysis and chatbot interaction, and library selection rationale
 
 ## User Preferences
 

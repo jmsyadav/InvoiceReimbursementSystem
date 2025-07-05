@@ -144,6 +144,141 @@ An intelligent Invoice Reimbursement System that analyzes employee expense claim
 1. **PDF Upload** → **Text Extraction** → **LLM Analysis** → **Fraud Detection**
 2. **Vector Embedding** → **Qdrant Storage** → **Chatbot Querying** → **Results Display**
 
+## API Endpoints
+
+### Invoice Analysis API
+- **POST `/analyze-invoices`**: Analyze uploaded invoices against policy
+  - **Input**: Policy PDF file + Invoice ZIP files
+  - **Output**: Analysis results with reimbursement status and fraud detection
+  - **Features**: Concurrent processing, structured data extraction, LLM analysis
+
+### Chatbot API
+- **POST `/chatbot`**: Query processed invoices using natural language
+  - **Input**: User query, optional filters, conversation history
+  - **Output**: RAG-powered response with source citations
+  - **Features**: Vector search, metadata filtering, conversation context
+
+### Data Management API
+- **GET `/invoices`**: Retrieve all processed invoices
+- **POST `/clear-duplicates`**: Remove duplicate invoice entries
+- **GET `/health`**: Health check endpoint for system status
+
+## Technical Details
+
+### LLM Integration and Choice
+- **Model Selection**: Llama3-8b-8192 via Groq API chosen for:
+  - **Fast Inference**: Sub-second response times for real-time analysis
+  - **Cost Efficiency**: Optimized for high-volume invoice processing
+  - **Accuracy**: Strong performance on structured document analysis tasks
+  - **Context Window**: 8192 tokens sufficient for policy + invoice analysis
+
+### Embedding Model and Vector Store
+- **Custom Embedding Algorithm**: 384-dimensional feature vectors using:
+  - **Keyword-based Features**: TF-IDF style frequency analysis for key terms
+  - **Hash-based Features**: Content hashing for similarity detection
+  - **Semantic Features**: Named entity recognition and pattern matching
+  - **Metadata Integration**: Employee names, dates, amounts as searchable features
+
+- **Qdrant Vector Database Integration**:
+  - **Collection Setup**: Automated collection creation with proper indexing
+  - **Metadata Filtering**: Supports filtering by employee, status, fraud flags, dates
+  - **Similarity Search**: Cosine similarity for semantic invoice matching
+  - **Fallback Mechanisms**: Local storage backup when Qdrant unavailable
+
+### Library Selection Rationale
+- **FastAPI**: Chosen for async support, automatic OpenAPI docs, and high performance
+- **Streamlit**: Selected for rapid prototyping, built-in UI components, and Python-native development
+- **pdfplumber**: Primary PDF processor for reliable text extraction from complex layouts
+- **Qdrant**: Vector database for production-scale semantic search with metadata filtering
+- **Pandas**: Data manipulation for invoice analytics and aggregation functions
+
+### Vector Store Integration Approach
+- **Automatic Storage**: All processed invoices automatically stored in Qdrant
+- **Dual Search Strategy**: Combines vector similarity with metadata filtering
+- **Session Isolation**: Proper data clearing between processing sessions
+- **Deduplication Logic**: Prevents duplicate invoice storage across sessions
+
+## Prompt Design
+
+### Invoice Analysis Prompts
+The system uses carefully crafted prompts for accurate invoice analysis:
+
+**Policy Analysis Prompt Structure**:
+```
+You are an expert HR policy analyst. Analyze this invoice against the reimbursement policy.
+
+POLICY CONTEXT:
+{policy_text}
+
+INVOICE DETAILS:
+- Employee: {employee_name}
+- Type: {invoice_type}
+- Amount: {amount}
+- Content: {invoice_text}
+
+ANALYSIS REQUIREMENTS:
+1. Determine reimbursement status (Fully Reimbursed/Partially Reimbursed/Declined)
+2. Calculate exact reimbursable amount if partially reimbursed
+3. Provide clear reasoning based on policy rules
+4. Identify any policy violations or missing requirements
+
+Return structured JSON with status, amount, and detailed reasoning.
+```
+
+**Fraud Detection Prompt Design**:
+```
+Analyze this invoice for potential fraud indicators:
+
+FRAUD DETECTION CRITERIA:
+- Date inconsistencies in travel invoices
+- Suspicious amount patterns
+- Missing mandatory information
+- Policy compliance violations
+
+INVOICE DATA:
+{invoice_details}
+
+Identify fraud patterns and provide specific reasoning for any flags.
+```
+
+### Chatbot Interaction Prompts
+The RAG-powered chatbot uses context-aware prompts:
+
+**RAG Query Prompt Structure**:
+```
+You are an intelligent invoice analysis assistant. Answer the user's question using the provided invoice data.
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+RELEVANT INVOICES:
+{context_invoices}
+
+USER QUESTION: {user_query}
+
+RESPONSE GUIDELINES:
+1. Use only information from the provided invoice data
+2. Provide specific numbers and employee names when available
+3. Include source references for all claims
+4. Maintain conversational context from previous interactions
+5. If information is not available, clearly state limitations
+
+Answer in a helpful, professional tone with specific details and source citations.
+```
+
+**Query Understanding and Filter Extraction**:
+- **Natural Language Processing**: Extracts filters from queries like "show me John's invoices"
+- **Entity Recognition**: Identifies employee names, amounts, dates, and status keywords
+- **Context Preservation**: Maintains conversation flow across multiple queries
+- **Source Attribution**: Always provides invoice references for transparency
+
+### Prompt Optimization Techniques
+- **Structured Output**: JSON format for consistent API responses
+- **Context Limiting**: Truncated content to fit within token limits
+- **Role Definition**: Clear system roles for focused analysis
+- **Error Handling**: Graceful handling of malformed or incomplete data
+- **Multi-turn Conversations**: Conversation history integration for better context
+
 ## Version Information
 - **Last Updated**: July 2025
 - **Architecture**: Streamlined single-file backend with modular frontend
