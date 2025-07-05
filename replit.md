@@ -2,128 +2,89 @@
 
 ## Overview
 
-This is an intelligent Invoice Reimbursement System that analyzes employee expense claims against company policies using Large Language Models (LLMs). The system provides automated invoice processing, fraud detection, and a conversational chatbot interface for querying processed invoices.
+The Invoice Reimbursement System is an intelligent application that automates the analysis of employee expense claims against company policies using Large Language Models (LLMs). The system leverages AI to process PDF invoices, detect fraud, and provide automated reimbursement decisions through a modern web interface.
 
 ## System Architecture
 
 ### Frontend Architecture
-- **Framework**: Streamlit for web interface
-- **Components**: Modular component structure with upload, results, and chatbot sections
-- **State Management**: Session-based state management for processed invoices and chat history
-- **API Communication**: RESTful API client for backend communication
+- **Framework**: Streamlit-based web application with component-based architecture
+- **Structure**: Modular design with separate components for upload, results, and chatbot functionality
+- **UI Philosophy**: Clean, professional interface focused on business use without excessive visual elements
+- **Main Entry Point**: `app.py` orchestrates the entire frontend experience
 
 ### Backend Architecture
-- **Framework**: FastAPI for REST API endpoints
-- **Service Layer**: Single-file architecture (`backend/simple_main.py`) with embedded functions for PDF processing, LLM analysis, and fraud detection
-- **Database Layer**: Qdrant vector database for semantic search with in-memory metadata storage
-- **Processing Pipeline**: Multi-stage processing with PDF parsing, LLM analysis, and vector embedding with automatic storage in Qdrant
+- **Framework**: FastAPI single-file architecture in `backend/simple_main.py`
+- **Design Pattern**: Streamlined monolithic approach with all core functionality in one file
+- **API Design**: RESTful endpoints for invoice analysis, chatbot queries, and data retrieval
+- **Storage**: In-memory storage for processed invoice data with vector database integration
 
-### LLM Integration
-- **Provider**: Groq API for fast inference
-- **Model**: Llama3-8b-8192 for cost-effective processing
-- **Use Cases**: Invoice analysis, fraud detection, and conversational querying
+### Data Processing Pipeline
+1. **PDF Processing**: Extract text from policy documents and invoices using pdfplumber
+2. **LLM Analysis**: Analyze invoices against policies using Groq API with Llama3-8b-8192 model
+3. **Vector Embedding**: Store analysis results in Qdrant vector database for semantic search
+4. **Fraud Detection**: Multi-layered fraud detection including date validation and pattern recognition
 
 ## Key Components
 
-### PDF Processing Service
-- **PDF Parser**: Extracts text from PDF documents using pdfplumber and PyPDF2
-- **Data Extraction**: Structured data extraction for employee names, dates, amounts, and invoice types
-- **Multi-format Support**: Handles various PDF formats and layouts
+### Core Services
+- **Invoice Analysis Engine**: Processes PDF invoices and compares against HR policies
+- **Fraud Detection System**: Identifies suspicious patterns including impossible travel, date inconsistencies, and amount anomalies
+- **Vector Search**: Semantic search capabilities using Qdrant for intelligent querying
+- **RAG Chatbot**: Conversational interface with context awareness and source attribution
 
-### LLM Analysis Service
-- **Policy Comparison**: Analyzes invoices against HR reimbursement policies
-- **Status Classification**: Categorizes invoices as Fully Reimbursed, Partially Reimbursed, or Declined
-- **Reasoning**: Provides detailed explanations for reimbursement decisions
+### Data Models
+- **InvoiceData**: Structured invoice information extraction
+- **InvoiceAnalysisResult**: Comprehensive analysis results with fraud detection
+- **ChatbotRequest/Response**: Conversational AI interface models
+- **VectorSearchRequest**: Semantic search functionality
 
-### Fraud Detection Service
-- **Date Validation**: Checks for inconsistent reporting and dropping dates in travel invoices
-- **Amount Anomalies**: Identifies suspicious amounts and patterns
-- **Missing Information**: Detects invoices with incomplete required fields
-- **Pattern Recognition**: Identifies potentially fraudulent behavior patterns
-
-### Vector Database Service
-- **Embedding Model**: Uses custom 384-dimensional feature vectors with keyword-based and hash-based features
-- **Storage**: Qdrant vector database for similarity search and retrieval
-- **Metadata Filtering**: Supports filtering by employee, date, status, and fraud indicators
-- **Integration**: Automatic storage of processed invoices in Qdrant with semantic search capabilities
-
-### Chatbot Service
-- **RAG Implementation**: Retrieval-Augmented Generation for accurate responses
-- **Natural Language Processing**: Understands queries about invoices, employees, and policies
-- **Context Awareness**: Maintains conversation history and provides relevant answers
+### Reimbursement Categories
+- **Fully Reimbursed**: Complete invoice amount approved
+- **Partially Reimbursed**: Portion of invoice approved with calculated amounts
+- **Declined**: Invoice rejected due to policy violations or fraud detection
 
 ## Data Flow
 
-1. **Invoice Upload**: Users upload HR policy PDF and invoice ZIP files through Streamlit frontend
-2. **PDF Processing**: Backend extracts text and structured data from all uploaded documents
-3. **LLM Analysis**: Each invoice is analyzed against the policy using Groq API
-4. **Fraud Detection**: Parallel fraud detection analysis for suspicious patterns
-5. **Vector Storage**: Analysis results are embedded and stored in Qdrant with metadata
-6. **Metadata Storage**: Structured data is stored in MongoDB for quick filtering
-7. **User Interface**: Results are displayed in the frontend with filtering and analytics
-8. **Chatbot Queries**: Users can ask natural language questions about processed invoices
+1. **Upload Phase**: Users upload HR policy PDF and employee invoice files (ZIP or individual PDFs)
+2. **Processing Phase**: Backend extracts text, analyzes against policies using LLM, and stores results
+3. **Analysis Phase**: System categorizes invoices and detects potential fraud
+4. **Storage Phase**: Results stored in vector database for semantic search
+5. **Query Phase**: Users interact through chatbot or view results in dashboard
 
 ## External Dependencies
 
-### Required APIs
-- **Groq API**: For LLM inference and analysis
-- **Qdrant Cloud**: Vector database for similarity search
-- **MongoDB**: Document database for metadata storage
+### Required API Services
+- **Groq API**: LLM inference using Llama3-8b-8192 model for policy analysis
+- **Qdrant Cloud**: Vector database for semantic search and similarity matching
+- **MongoDB**: Document storage (configured but not actively used in current implementation)
 
 ### Python Libraries
-- **FastAPI**: Backend web framework
-- **Streamlit**: Frontend web application
-- **pdfplumber/PyPDF2**: PDF text extraction
-- **sentence-transformers**: Text embeddings
-- **pymongo**: MongoDB client
-- **qdrant-client**: Vector database client
-- **groq**: LLM API client
-
-### Environment Variables
-- `GROQ_API_KEY`: API key for Groq LLM service
-- `QDRANT_API_KEY`: API key for Qdrant vector database
-- `QDRANT_URL`: Qdrant instance URL
-- `MONGODB_URL`: MongoDB connection string
+- **FastAPI**: High-performance web framework for API endpoints
+- **Streamlit**: Interactive web application framework
+- **pdfplumber**: PDF text extraction and processing
+- **qdrant-client**: Vector database client for semantic search
+- **requests**: HTTP client for API communication
 
 ## Deployment Strategy
 
-### Development Environment
-- **Local Development**: Both frontend and backend run locally
-- **Port Configuration**: Backend on port 8000, frontend on default Streamlit port
-- **Threading**: Backend starts in separate thread from frontend
+### Local Development
+- **Backend**: FastAPI server runs on localhost:8000 with uvicorn
+- **Frontend**: Streamlit application auto-starts backend server
+- **Environment**: Python 3.11+ with virtual environment setup
 
-### Production Considerations
-- **Containerization**: Docker support for consistent deployment
-- **Scalability**: Separate frontend and backend services
-- **Database Hosting**: Cloud-hosted MongoDB and Qdrant instances
-- **Load Balancing**: Multiple backend instances for high availability
+### Configuration Management
+- **Environment Variables**: Centralized configuration via .env file
+- **API Keys**: Secure storage of Groq, Qdrant, and MongoDB credentials
+- **CORS**: Cross-origin resource sharing enabled for frontend-backend communication
 
-### Security Measures
-- **API Key Management**: Environment variable-based configuration
-- **CORS Configuration**: Properly configured cross-origin requests
-- **Input Validation**: Comprehensive file type and size validation
-- **Error Handling**: Graceful error handling and user feedback
+### Scalability Considerations
+- **Single-file backend**: Simplified deployment but may require refactoring for scale
+- **Vector database**: Qdrant provides horizontal scaling capabilities
+- **In-memory storage**: Current limitation that may require database persistence for production
 
 ## Changelog
 
-- July 04, 2025. Initial setup
-- July 04, 2025. Fixed critical fraud detection bug - improved travel date validation to properly identify impossible travel dates while allowing legitimate travel scenarios
-- July 04, 2025. Implemented complete RAG LLM Chatbot with vector search, metadata filtering, conversation history, and markdown response formatting using Groq API
-- July 04, 2025. Fixed duplicate invoice storage issue - implemented comprehensive deduplication logic to prevent storage accumulation
-- July 04, 2025. Updated RAG chatbot to use plain text responses instead of markdown formatting for better readability
-- July 04, 2025. Cleaned up interface by removing all emojis and sample query prompts for professional appearance
-- July 04, 2025. Fixed chatbot date display issue - resolved missing invoice_date field in source data formatting
-- July 04, 2025. Integrated Qdrant vector store - implemented full vector database integration with automatic invoice storage, semantic search, and metadata filtering while maintaining simplified architecture
-- July 04, 2025. Fixed critical chatbot search bug - enhanced employee name pattern matching and increased search limits to properly return all invoices for specific employees (previously only returning 1 of 3 invoices for Rani, 0 of 2 for Sachin)
-- July 04, 2025. Fixed duplicate invoice results in chatbot - implemented deduplication logic to ensure unique results and removed Amount Distribution feature from results view for cleaner interface
-- July 04, 2025. Fixed critical chatbot search bugs - enhanced "Unknown Employee" pattern matching, increased search limits to 20 for all employee queries, synchronized Qdrant vector storage with proper filtering, and eliminated data contamination issues for consistent search results
-- July 04, 2025. Major project cleanup - fixed app.py backend import to use simple_main, removed unused backend services/utils/database folders (~15 files), removed unused frontend files (chatbot.py, dashboard.py, invoice_analyzer.py), cleaned attached_assets folder to keep only 5 essential files, streamlined architecture to 70% smaller codebase
-- July 04, 2025. Fixed critical chatbot calculation bug - added missing reimbursement_status filter support and Qdrant index configuration to enable proper status-based searching and accurate reimbursement amount calculations
-- July 04, 2025. Removed all emojis from frontend - cleaned up professional interface by removing emojis from upload, results, chatbot components and main app for business-focused appearance
-- July 05, 2025. Fixed session isolation bug - implemented proper data clearing when starting new analysis sessions to prevent invoice accumulation across multiple processing sessions with correct Qdrant index creation
-- July 05, 2025. Identified frontend caching issue - session isolation working correctly (backend properly clears data), but frontend shows cached results from previous session, actual total reimbursed amount from last session was ₹4,000 (2 partially reimbursed invoices at ₹2,000 each)
-- July 05, 2025. Fixed comprehensive Qdrant and chatbot bugs - resolved null payload errors, improved embedding algorithm for better semantic matching, fixed boolean fraud_detected index, implemented proper session clearing with scroll/delete, added fallback to local storage when Qdrant is empty, and enhanced query type detection for consistent search results
-- July 05, 2025. Completed comprehensive README.md documentation - added detailed API endpoints section, comprehensive technical details explaining LLM/embedding model choices and vector store integration, complete prompt design documentation with example prompts for invoice analysis and chatbot interaction, and library selection rationale
+- July 05, 2025. Initial setup
 
 ## User Preferences
 
