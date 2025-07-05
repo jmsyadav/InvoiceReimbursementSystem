@@ -567,7 +567,7 @@ Response:"""
                     }
                 ],
                 "max_tokens": 1000,
-                "temperature": 0.1
+                "temperature": 0.2
             },
             timeout=30
         )
