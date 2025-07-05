@@ -10,6 +10,10 @@ import json
 import math
 import re
 import uuid
+from dotenv import load_dotenv
+
+# Load environment variables from .env at application startup
+load_dotenv()
 import asyncio
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
@@ -47,14 +51,14 @@ async def initialize_qdrant():
         # Create collection if it doesn't exist
         try:
             collection_info = qdrant_client.get_collection(COLLECTION_NAME)
-            print(f"✅ Connected to existing Qdrant collection: {COLLECTION_NAME}")
+            print(f" Connected to existing Qdrant collection: {COLLECTION_NAME}")
         except Exception:
             # Collection doesn't exist, create it
             qdrant_client.create_collection(
                 collection_name=COLLECTION_NAME,
                 vectors_config=VectorParams(size=384, distance=Distance.COSINE),
             )
-            print(f"✅ Created new Qdrant collection: {COLLECTION_NAME}")
+            print(f" Created new Qdrant collection: {COLLECTION_NAME}")
         
         # Create payload indexes for filtering
         try:
@@ -88,13 +92,13 @@ async def initialize_qdrant():
                 field_schema=PayloadSchemaType.KEYWORD
             )
             
-            print(f"✅ Created payload indexes for filtering")
+            print(f" Created payload indexes for filtering")
             
         except Exception as e:
-            print(f"⚠️ Index creation info: {e}")  # May already exist
+            print(f" Index creation info: {e}")  # May already exist
             
     except Exception as e:
-        print(f"❌ Failed to initialize Qdrant: {e}")
+        print(f" Failed to initialize Qdrant: {e}")
         qdrant_client = None
 
 # RAG Helper Functions
