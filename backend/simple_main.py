@@ -249,7 +249,8 @@ async def store_invoice_in_qdrant(invoice_data: dict):
                 "invoice_type": invoice_data.get('invoice_type', 'Unknown'),
                 "reimbursement_status": invoice_data.get('reimbursement_status', 'Unknown'),
                 "fraud_detected": invoice_data.get('fraud_detected', False),
-                "content": content_text[:500]  # Limit content size
+                "content": content_text[:500],  # Limit content size
+                "session_id": "current"  # Track current session
             }
         )
         
@@ -593,6 +594,46 @@ async def analyze_invoices(
     Analyze invoices against HR reimbursement policy
     """
     try:
+        # Clear previous session data when starting new analysis
+        global invoices_storage
+        invoices_storage.clear()
+        
+        # Also clear Qdrant collection to start fresh
+        if qdrant_client:
+            try:
+                # Delete all points in collection by recreating it
+                qdrant_client.delete_collection(COLLECTION_NAME)
+                # Recreate the collection
+                qdrant_client.create_collection(
+                    collection_name=COLLECTION_NAME,
+                    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
+                )
+                
+                # Recreate indexes
+                qdrant_client.create_payload_index(
+                    collection_name=COLLECTION_NAME,
+                    field_name="employee_name",
+                    field_schema=models.KeywordIndexParams()
+                )
+                qdrant_client.create_payload_index(
+                    collection_name=COLLECTION_NAME,
+                    field_name="reimbursement_status",
+                    field_schema=models.KeywordIndexParams()
+                )
+                qdrant_client.create_payload_index(
+                    collection_name=COLLECTION_NAME,
+                    field_name="invoice_type",
+                    field_schema=models.KeywordIndexParams()
+                )
+                qdrant_client.create_payload_index(
+                    collection_name=COLLECTION_NAME,
+                    field_name="fraud_detected",
+                    field_schema=models.KeywordIndexParams()
+                )
+                print("✅ Cleared previous session data from Qdrant")
+            except Exception as e:
+                print(f"⚠️ Could not clear Qdrant data: {e}")
+        
         # Process the uploaded files
         results = []
         
