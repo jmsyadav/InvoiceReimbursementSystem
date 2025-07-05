@@ -239,7 +239,7 @@ def create_basic_embedding(text: str) -> List[float]:
 async def store_invoice_in_qdrant(invoice_data: dict):
     """Store invoice data in Qdrant vector database"""
     if not qdrant_client:
-        print("⚠️ Qdrant client not initialized, skipping vector storage")
+        print(" Qdrant client not initialized, skipping vector storage")
         return
     
     try:
@@ -279,15 +279,15 @@ async def store_invoice_in_qdrant(invoice_data: dict):
             points=[point]
         )
         
-        print(f"✅ Stored invoice {invoice_data['invoice_id']} in Qdrant")
+        print(f" Stored invoice {invoice_data['invoice_id']} in Qdrant")
         
     except Exception as e:
-        print(f"❌ Error storing invoice in Qdrant: {e}")
+        print(f" Error storing invoice in Qdrant: {e}")
 
 async def search_invoices_in_qdrant(query: str, filters: Optional[Dict[str, Any]] = None, limit: int = 20) -> List[Dict[str, Any]]:
     """Search invoices in Qdrant vector database"""
     if not qdrant_client:
-        print("⚠️ Qdrant client not initialized, falling back to local search")
+        print(" Qdrant client not initialized, falling back to local search")
         return search_invoices_by_similarity(query, filters if filters else {}, limit)
     
     try:
@@ -355,11 +355,11 @@ async def search_invoices_in_qdrant(query: str, filters: Optional[Dict[str, Any]
                 "similarity_score": result.score
             })
         
-        print(f"✅ Found {len(results)} unique results in Qdrant")
+        print(f" Found {len(results)} unique results in Qdrant")
         return results
         
     except Exception as e:
-        print(f"❌ Error searching Qdrant: {e}")
+        print(f" Error searching Qdrant: {e}")
         # Fallback to local search
         return search_invoices_by_similarity(query, filters if filters else {}, limit)
 
@@ -641,16 +641,16 @@ async def analyze_invoices(
                             collection_name=COLLECTION_NAME,
                             points_selector=models.PointIdsList(points=point_ids)
                         )
-                        print(f"✅ Cleared {len(point_ids)} points from Qdrant collection")
+                        print(f" Cleared {len(point_ids)} points from Qdrant collection")
                     else:
-                        print("✅ Qdrant collection already empty")
+                        print(" Qdrant collection already empty")
                         
                 except Exception:
                     # Collection doesn't exist, no need to clear
-                    print("✅ Qdrant collection doesn't exist, no data to clear")
+                    print(" Qdrant collection doesn't exist, no data to clear")
                     
             except Exception as e:
-                print(f"⚠️ Could not clear Qdrant data: {e}")
+                print(f"⚠ Could not clear Qdrant data: {e}")
         
         # Process the uploaded files
         results = []
@@ -983,7 +983,7 @@ async def chatbot_query(request: ChatbotRequest):
         
         # If Qdrant search returns no results, fall back to local storage search
         if not relevant_invoices and invoices_storage:
-            print("⚠️ Qdrant search returned no results, falling back to local storage")
+            print(" Qdrant search returned no results, falling back to local storage")
             relevant_invoices = search_invoices_by_similarity(query, filters, search_limit)
         
         # Build context from retrieved invoices
