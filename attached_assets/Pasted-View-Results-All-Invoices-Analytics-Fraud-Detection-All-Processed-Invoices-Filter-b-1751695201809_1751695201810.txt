@@ -1,0 +1,521 @@
+View Results
+
+All Invoices
+
+
+Analytics
+
+
+Fraud Detection
+
+All Processed Invoices
+Filter by Employee
+
+All
+Filter by Status
+
+All
+Filter by Fraud
+
+All
+Showing 28 of 28 invoices
+
+INV-20250705-000 - Reetu
+
+Employee: Reetu
+
+Date: 2024-09-10
+
+Amount: ₹233.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹233.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-001 - Rekha
+
+Employee: Rekha
+
+Date: 2024-09-17
+
+Amount: ₹167.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹167.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-002 - Seema
+
+Employee: Seema
+
+Date: 2024-09-19
+
+Amount: ₹141.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹141.0 is within the daily office cab allowance limit of ₹150. According to the policy, all reimbursable expenses must be supported by original receipts and submitted within 30 days of the expense incurred. The invoice contains an original tax invoice and driver trip invoice, meeting the submission requirements.
+
+INV-20250705-003 - Shrutik
+
+Employee: Shrutik
+
+Date: 2024-05-12
+
+Amount: ₹161.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹161.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-004 - Anjaneyak
+
+Employee: Anjaneyak
+
+Date: 2024-05-17
+
+Amount: ₹233.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹233.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-005 - Anjaneyak
+
+Employee: Anjaneyak
+
+Date: 2024-06-14
+
+Amount: ₹333.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹333.0 exceeds the daily office cab allowance of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-006 - Sunil
+
+Employee: Sunil
+
+Date: 2024-06-14
+
+Amount: ₹111.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹111.0 is within the daily office cab allowance limit of ₹150. According to the policy, all reimbursable expenses must be supported by original receipts and submitted within 30 days of the expense incurred. The invoice contains an original tax invoice and driver trip invoice, meeting the submission requirements.
+
+INV-20250705-007 - Chaitra
+
+Employee: Chaitra
+
+Date: 2024-06-14
+
+Amount: ₹444.0
+
+Type: cab
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹444.0 exceeds the daily office cab allowance limit of ₹150. The reimbursable amount is ₹150.
+
+INV-20250705-008 - Rani
+
+Employee: Rani
+
+Date: 2024-06-18
+
+Amount: ₹150.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹150.0 is within the daily office cab allowance limit of ₹150.0 as per the HR reimbursement policy.
+
+INV-20250705-009 - Rajesh
+
+Employee: Rajesh
+
+Date: 2024-06-20
+
+Amount: ₹150.0
+
+Type: cab
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹150.0 is within the daily office cab allowance limit of ₹150.0 as per the policy.
+
+INV-20250705-000 - Sushma
+
+Employee: Sushma
+
+Date: 2024-07-25
+
+Amount: ₹7377.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Fraud Reason: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Reporting Date: 2024-07-25
+
+Dropping Date: 2024-06-24
+
+INV-20250705-001 - Rani
+
+Employee: Rani
+
+Date: 2024-07-25
+
+Amount: ₹9899.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Fraud Reason: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Reporting Date: 2024-07-25
+
+Dropping Date: 2024-06-24
+
+INV-20250705-002 - Rani
+
+Employee: Rani
+
+Date: 2024-07-25
+
+Amount: ₹4352.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Fraud Reason: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Reporting Date: 2024-07-25
+
+Dropping Date: 2024-06-24
+
+INV-20250705-003 - Kumar
+
+Employee: Kumar
+
+Date: 2024-07-25
+
+Amount: ₹8900.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Fraud Reason: IMPOSSIBLE TRAVEL: Arrival date (24/06/2024) is 31 days before departure date (25/07/2024)
+
+Reporting Date: 2024-07-25
+
+Dropping Date: 2024-06-24
+
+INV-20250705-004 - Sachin
+
+Employee: Sachin
+
+Date: 2024-08-17
+
+Amount: ₹8900.0
+
+Type: travel
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹8900.0 exceeds the travel policy limit of ₹2,000. The reimbursable amount is ₹2,000.
+
+Reporting Date: 2024-08-17
+
+Dropping Date: 2024-08-17
+
+INV-20250705-005 - Sachin
+
+Employee: Sachin
+
+Date: 2024-08-17
+
+Amount: ₹2024.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Fraud Reason: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Reporting Date: 2024-08-17
+
+Dropping Date: 2024-09-21
+
+INV-20250705-006 - Ramesh
+
+Employee: Ramesh
+
+Date: 2024-08-17
+
+Amount: ₹2100.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Fraud Reason: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Reporting Date: 2024-08-17
+
+Dropping Date: 2024-09-21
+
+INV-20250705-007 - Sunil
+
+Employee: Sunil
+
+Date: 2024-08-17
+
+Amount: ₹2100.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Fraud Reason: SUSPICIOUS TRAVEL: Journey duration of 35 days from 17/08/2024 to 21/09/2024 exceeds reasonable travel time
+
+Reporting Date: 2024-08-17
+
+Dropping Date: 2024-09-21
+
+INV-20250705-008 - Rani
+
+Employee: Rani
+
+Date: 2024-05-22
+
+Amount: ₹6788.0
+
+Type: travel
+
+Status: Declined
+
+Fraud Detected
+
+Reason: Fraud detected: Invoice is too old - reporting date (22/05/2024) is more than 1 year ago
+
+Fraud Reason: Invoice is too old - reporting date (22/05/2024) is more than 1 year ago
+
+Reporting Date: 2024-05-22
+
+Dropping Date: 2024-05-22
+
+INV-20250705-009 - Avinash
+
+Employee: Avinash
+
+Date: 2024-09-30
+
+Amount: ₹4311.0
+
+Type: travel
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹4311.0 exceeds the travel policy limit of ₹2000. The reimbursable amount is ₹2000. The remaining amount ₹1411.0 is not reimbursable under this policy.
+
+INV-20250705-000 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-03
+
+Amount: ₹770.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice contains alcoholic beverages (₹300 for 2 Royal Stag Whisky) which are not reimbursable. The eligible meal amount after removing alcohol is ₹470. Since ₹470 is greater than the meal policy limit of ₹200, the status is Partially Reimbursed for ₹200.
+
+INV-20250705-001 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-03
+
+Amount: ₹607.7
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹607.7 is greater than the meal policy limit ₹200. The reimbursable amount is ₹200.
+
+INV-20250705-002 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-13
+
+Amount: ₹374.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹374.0 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.
+
+INV-20250705-003 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-13
+
+Amount: ₹88.0
+
+Type: meal
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹88.0 is less than the meal policy limit ₹200. According to the policy, reimbursement for meals is allowed when traveling for work or attending business meetings, and the limit for food reimbursement is ₹200 per meal. Therefore, the employee is eligible for full reimbursement of ₹88.0.
+
+INV-20250705-004 - Unknown Employee
+
+Employee: Unknown Employee
+
+Date: 2024-12-23
+
+Amount: ₹440.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹440.0 exceeds the meal policy limit of ₹200. The reimbursable amount is ₹200.
+
+INV-20250705-005 - Avinash
+
+Employee: Avinash
+
+Date: 2024-12-26
+
+Amount: ₹1100.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹1100.0 exceeds the meal policy limit of ₹200. The eligible amount for reimbursement is ₹200, as per the policy. The invoice contains alcoholic beverages (Wines) worth ₹750, which are not reimbursable. The remaining eligible amount after removing alcohol is ₹350, but the policy limit of ₹200 is applied for reimbursement.
+
+INV-20250705-006 - Shivam
+
+Employee: Shivam
+
+Date: 2024-12-26
+
+Amount: ₹90.0
+
+Type: meal
+
+Status: Fully Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹90.0 is less than the meal policy limit ₹200. According to the policy, all reimbursements must be supported by original receipts and submitted within 30 days of the expense incurred. The employee has submitted the original receipt, and the invoice is within the time limit. Therefore, the reimbursement status is Fully Reimbursed.
+
+INV-20250705-007 - Hardhik
+
+Employee: Hardhik
+
+Date: 2024-12-07
+
+Amount: ₹754.0
+
+Type: meal
+
+Status: Partially Reimbursed
+
+No Fraud
+
+Reason: The invoice amount ₹754.0 is greater than the meal policy limit ₹200. The reimbursable amount is ₹200.

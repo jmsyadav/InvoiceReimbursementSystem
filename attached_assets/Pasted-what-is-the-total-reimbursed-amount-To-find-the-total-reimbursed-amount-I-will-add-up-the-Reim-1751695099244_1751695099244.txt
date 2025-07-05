@@ -1,0 +1,55 @@
+what is the total reimbursed amount?
+
+To find the total reimbursed amount, I will add up the "Reimbursed Amount" field for each invoice.
+
+Invoice 1 has a reimbursed amount of Rs 88.00, Invoice 2 has a reimbursed amount of Rs 90.00, Invoice 3 has a reimbursed amount of Rs 88.00, and Invoice 4 has a reimbursed amount of Rs 90.00.
+
+Adding these amounts together, the total reimbursed amount is Rs 356.00.
+
+what is the total fully reimbursed amount?
+
+To find the total fully reimbursed amount, I will look at the status of each invoice.
+
+Invoice 1 is fully reimbursed for Rs 90.00, Invoice 2 is fully reimbursed for Rs 88.00, Invoice 3 is fully reimbursed for Rs 88.00, and Invoice 4 is fully reimbursed for Rs 90.00.
+
+Adding these amounts together, the total fully reimbursed amount is Rs 316.00.
+
+total invoices by Rani?
+
+To find the total invoices by Rani, I will look at the employee name in each invoice.
+
+Invoice 1 has Rani as the employee, Invoice 2 also has Rani as the employee, Invoice 3 has Rani as the employee, and Invoice 4 has Rani as the employee.
+
+Since all four invoices have Rani as the employee, the total number of invoices by Rani is 4.
+
+Which invoices were declined?
+
+To find the invoices that were declined, I will look at the status of each invoice.
+
+Invoice 1 has a status of Declined, Invoice 2 also has a status of Declined, Invoice 3 has a status of Declined, Invoice 4 has a status of Declined, Invoice 5 has a status of Declined, Invoice 6 has a status of Declined, and Invoice 7 has a status of Declined.
+
+All seven invoices have a status of Declined, which means they were not reimbursed.
+
+Which employee invoices were declined?
+
+To find the employee invoices that were declined, I will look at the status of each invoice.
+
+Invoice 1 has Rani as the employee and is declined, Invoice 2 also has Rani as the employee and is declined, Invoice 6 has Rani as the employee and is declined, Invoice 3 has Ramesh as the employee and is declined, Invoice 4 has Sachin as the employee and is declined, and Invoice 5 has Sushma as the employee and is declined.
+
+So, the employee invoices that were declined are for Rani, Ramesh, Sachin, and Sushma.
+
+which invoice has highest amount?
+
+To find the invoice with the highest amount, I will look at the "Amount" field in each invoice.
+
+Invoice 1 has an amount of Rs 7,377.00, Invoice 2 has an amount of Rs 8,900.00, Invoice 3 has an amount of Rs 6,788.00, Invoice 4 has an amount of Rs 2,024.00, Invoice 5 has an amount of Rs 754.00, Invoice 6 has an amount of Rs 6,788.00, and Invoice 7 has an amount of Rs 2,100.00.
+
+The invoice with the highest amount is Invoice 2, which has an amount of Rs 8,900.00. This invoice belongs to Kumar and was submitted for travel on 2024-07-25.
+
+who submitted more invoices?
+
+To find out who submitted more invoices, I will count the number of invoices submitted by each employee.
+
+Rani submitted 2 invoices, Invoice 2 and Invoice 3, both of which were declined. Ramesh submitted 1 invoice, Invoice 1, which was also declined. Kumar submitted 1 invoice, Invoice 4, which was declined. Sushma submitted 1 invoice, Invoice 5, which was declined. Sachin submitted 1 invoice, Invoice 6, which was declined. Sunil submitted 1 invoice, Invoice 7, which was declined.
+
+It appears that Rani submitted the most invoices, with a total of 2 declined invoices.
