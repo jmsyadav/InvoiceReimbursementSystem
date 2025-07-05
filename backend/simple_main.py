@@ -14,6 +14,7 @@ import asyncio
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 from qdrant_client.http import models
+from qdrant_client.models import PayloadSchemaType
 
 app = FastAPI(title="Invoice Reimbursement System API", version="1.0.0")
 
@@ -601,34 +602,12 @@ async def analyze_invoices(
         # Also clear Qdrant collection to start fresh
         if qdrant_client:
             try:
-                # Delete all points in collection by recreating it
-                qdrant_client.delete_collection(COLLECTION_NAME)
-                # Recreate the collection
-                qdrant_client.create_collection(
+                # Delete all points in collection
+                qdrant_client.delete(
                     collection_name=COLLECTION_NAME,
-                    vectors_config=VectorParams(size=384, distance=Distance.COSINE),
-                )
-                
-                # Recreate indexes
-                qdrant_client.create_payload_index(
-                    collection_name=COLLECTION_NAME,
-                    field_name="employee_name",
-                    field_schema=models.KeywordIndexParams(type="keyword")
-                )
-                qdrant_client.create_payload_index(
-                    collection_name=COLLECTION_NAME,
-                    field_name="reimbursement_status",
-                    field_schema=models.KeywordIndexParams(type="keyword")
-                )
-                qdrant_client.create_payload_index(
-                    collection_name=COLLECTION_NAME,
-                    field_name="invoice_type",
-                    field_schema=models.KeywordIndexParams(type="keyword")
-                )
-                qdrant_client.create_payload_index(
-                    collection_name=COLLECTION_NAME,
-                    field_name="fraud_detected",
-                    field_schema=models.KeywordIndexParams(type="keyword")
+                    points_selector=models.FilterSelector(
+                        filter=models.Filter()  # Delete all points
+                    )
                 )
                 print("✅ Cleared previous session data from Qdrant")
             except Exception as e:

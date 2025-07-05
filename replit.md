@@ -121,6 +121,7 @@ This is an intelligent Invoice Reimbursement System that analyzes employee expen
 - July 04, 2025. Fixed critical chatbot calculation bug - added missing reimbursement_status filter support and Qdrant index configuration to enable proper status-based searching and accurate reimbursement amount calculations
 - July 04, 2025. Removed all emojis from frontend - cleaned up professional interface by removing emojis from upload, results, chatbot components and main app for business-focused appearance
 - July 05, 2025. Fixed session isolation bug - implemented proper data clearing when starting new analysis sessions to prevent invoice accumulation across multiple processing sessions with correct Qdrant index creation
+- July 05, 2025. Identified frontend caching issue - session isolation working correctly (backend properly clears data), but frontend shows cached results from previous session, actual total reimbursed amount from last session was ₹4,000 (2 partially reimbursed invoices at ₹2,000 each)
 
 ## User Preferences
 
