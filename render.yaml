@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: invoice-reimbursement-backend
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn backend.simple_main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: QDRANT_URL
+        value: https://d7a50709-8427-48a5-a876-60b922bc058d.europe-west3-0.gcp.cloud.qdrant.io:6333
+      - key: QDRANT_API_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.T1y9LX_cHA2bHfG1w7NiC_vVsGQ6Hsab-v4m1lNKWsk
+
