@@ -464,7 +464,9 @@ def build_context_from_invoices(invoices: List[Dict[str, Any]]) -> str:
         context += f"Type: {invoice.get('invoice_type', 'Unknown')}\n"
         context += f"Status: {invoice.get('reimbursement_status', 'Unknown')}\n"
         context += f"Date: {invoice.get('invoice_date', 'Unknown')}\n"
-        context += f"Reason: {invoice.get('reason', 'No reason provided')}\n"
+        reason = invoice.get('reason')
+        if reason is not None:  # Only add if the field exists (even if empty)
+            context += f"Reason: {reason if reason else 'No reason provided'}\n"
         
         # Add calculated reimbursed amount based on status and policy limits
         status = invoice.get('reimbursement_status', 'Unknown')
@@ -508,6 +510,26 @@ async def generate_rag_response(query: str, context: str, conversation_history: 
     # Create LLM prompt
     prompt = f"""You are an intelligent assistant for an Invoice Reimbursement System. Answer the user's query based on the provided invoice data.
 
+IMPORTANT INSTRUCTIONS:
+1. ALWAYS include the reimbursement reason in your response when discussing specific invoices
+2. For each invoice mentioned, include:
+   - Employee name
+   - Invoice amount and status
+   - The exact reason for the status (this is CRITICAL)
+   - Any fraud alerts with details
+
+3. If the user asks "why" about a reimbursement decision, focus on explaining the reason from the invoice data
+4. Be specific and detailed in your explanations
+5. If multiple invoices match, provide a clear summary with each invoice's status and reason
+6. Never make up reasons - only use what's provided in the context
+
+Example good response:
+"Rani's invoice for Rs 1,200 was Partially Reimbursed Rs 200. Reason: Meal expenses exceed the daily limit of Rs 200 per meal as per company policy."
+
+Example good response:
+"Two invoices were found for Sachin:
+1. Invoice INV-123: Rs 1,500 travel expense - Fully Reimbursed. Reason: Within policy limits.
+2. Invoice INV-124: Rs 3,000 travel expense - Partially Reimbursed Rs 2,000. Reason: Exceeds maximum travel allowance of Rs 2,000 per trip."
 IMPORTANT CALCULATION RULES:
 - For reimbursement totals, use the "Reimbursed Amount" field, NOT the "Amount" field
 - Fully Reimbursed = Full amount reimbursed
@@ -535,6 +557,7 @@ Instructions:
 8. Include the exact reimbursement reason when available
 9. For fraud cases, clearly state the fraud detection reason
 10. Use natural language in plain text format
+
 
 Response:"""
 
