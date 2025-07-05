@@ -25,7 +25,7 @@ app = FastAPI(title="Invoice Reimbursement System API", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://invoice-reimbursement-system.streamlit.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
