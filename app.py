@@ -52,7 +52,11 @@ def main():
         st.session_state.chat_history = []
     
     # Start backend server in a separate thread (non-blocking)
-    if 'backend_started' not in st.session_state:
+    # NOTE: Streamlit Cloud exposes only port 8501. Spawning our own FastAPI
+    # server on another port causes the health-check to fail. Skip backend
+    # startup when running in that environment (or when user disables it).
+    cloud_env = os.getenv("STREAMLIT_CLOUD", "0") == "1" or os.getenv("DISABLE_BACKEND") == "1"
+    if not cloud_env and 'backend_started' not in st.session_state:
         backend_thread = threading.Thread(target=start_backend, daemon=True)
         backend_thread.start()
         st.session_state.backend_started = True
