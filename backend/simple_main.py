@@ -182,7 +182,7 @@ def extract_filters_from_natural_language(query: str) -> Dict[str, Any]:
     return filters
 
 def create_basic_embedding(text: str) -> List[float]:
-    """Create a basic embedding using simple text features"""
+    """Create a basic embedding using simple text features with improved semantic matching"""
     words = text.lower().split()
     
     # Create a 384-dimensional vector with basic features
@@ -199,12 +199,19 @@ def create_basic_embedding(text: str) -> List[float]:
     embedding[12] = 1.0 if any(word in ['cab', 'taxi', 'uber', 'ola', 'transport'] for word in words) else 0.0
     embedding[13] = 1.0 if any(word in ['alcohol', 'beer', 'wine', 'liquor', 'whisky'] for word in words) else 0.0
     
-    # Feature 21-30: Amount-related features
+    # Feature 21-30: Amount-related features and query indicators
     import re
     amounts = re.findall(r'\d+\.?\d*', text)
     if amounts:
         embedding[20] = float(amounts[0]) / 10000.0  # Normalize first amount
         embedding[21] = len(amounts) / 10.0  # Number of amounts
+    
+    # Enhanced query type detection
+    embedding[22] = 1.0 if any(word in ['total', 'sum', 'amount', 'calculate', 'add'] for word in words) else 0.0
+    embedding[23] = 1.0 if any(word in ['reimbursed', 'reimbursement', 'paid', 'approved'] for word in words) else 0.0
+    embedding[24] = 1.0 if any(word in ['all', 'show', 'list', 'display', 'get', 'find'] for word in words) else 0.0
+    embedding[25] = 1.0 if any(word in ['invoices', 'invoice', 'expenses', 'claims', 'receipts'] for word in words) else 0.0
+    embedding[26] = 1.0 if any(word in ['fraud', 'fraudulent', 'suspicious', 'declined'] for word in words) else 0.0
     
     # Feature 31-40: Name patterns
     names = re.findall(r'\b[A-Z][a-z]+\b', text)
@@ -212,9 +219,16 @@ def create_basic_embedding(text: str) -> List[float]:
         embedding[30] = len(names) / 10.0
         embedding[31] = len(set(names)) / len(names) if names else 0
     
-    # Fill remaining dimensions with hash-based features
+    # Add universal query indicators for better matching
+    # These features help match general queries with specific invoice data
+    universal_features = 0.3  # Base similarity for all invoice-related queries
+    if any(word in text.lower() for word in ['invoice', 'reimburs', 'amount', 'total', 'expense', 'claim']):
+        universal_features = 0.7
+    
+    # Fill remaining dimensions with hash-based features + universal component
     for i in range(40, 384):
-        embedding[i] = (hash(text + str(i)) % 1000) / 1000.0
+        hash_component = (hash(text + str(i)) % 1000) / 1000.0
+        embedding[i] = hash_component * 0.3 + universal_features * 0.7
     
     return embedding
 
@@ -266,11 +280,11 @@ async def store_invoice_in_qdrant(invoice_data: dict):
     except Exception as e:
         print(f"❌ Error storing invoice in Qdrant: {e}")
 
-async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, limit: int = 20) -> List[Dict[str, Any]]:
+async def search_invoices_in_qdrant(query: str, filters: Optional[Dict[str, Any]] = None, limit: int = 20) -> List[Dict[str, Any]]:
     """Search invoices in Qdrant vector database"""
     if not qdrant_client:
         print("⚠️ Qdrant client not initialized, falling back to local search")
-        return search_invoices_by_similarity(query, filters or {}, limit)
+        return search_invoices_by_similarity(query, filters if filters else {}, limit)
     
     try:
         # Create query embedding
@@ -290,7 +304,7 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
                     )
                 elif key == "fraud_detected" and value is not None:
                     filter_conditions.append(
-                        FieldCondition(key="fraud_detected", match=MatchValue(value=value))
+                        FieldCondition(key="fraud_detected", match=MatchValue(value=bool(value)))
                     )
                 elif key == "reimbursement_status" and value:
                     filter_conditions.append(
@@ -314,6 +328,9 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
         seen_invoice_ids = set()
         
         for result in search_results:
+            if not result.payload:
+                continue
+                
             invoice_id = result.payload.get("invoice_id", f"ID-{result.id}")
             
             # Skip if we've already seen this invoice ID
@@ -321,15 +338,16 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
                 continue
                 
             seen_invoice_ids.add(invoice_id)
+            payload = result.payload or {}
             results.append({
                 "invoice_id": invoice_id,
-                "employee_name": result.payload.get("employee_name", "Unknown"),
-                "invoice_date": result.payload.get("invoice_date", "Unknown"),
-                "amount": result.payload.get("amount", 0),
-                "invoice_type": result.payload.get("invoice_type", "Unknown"),
-                "reimbursement_status": result.payload.get("reimbursement_status", "Unknown"),
-                "fraud_detected": result.payload.get("fraud_detected", False),
-                "content": result.payload.get("content", ""),
+                "employee_name": payload.get("employee_name", "Unknown"),
+                "invoice_date": payload.get("invoice_date", "Unknown"),
+                "amount": payload.get("amount", 0),
+                "invoice_type": payload.get("invoice_type", "Unknown"),
+                "reimbursement_status": payload.get("reimbursement_status", "Unknown"),
+                "fraud_detected": payload.get("fraud_detected", False),
+                "content": payload.get("content", ""),
                 "similarity_score": result.score
             })
         
@@ -339,7 +357,7 @@ async def search_invoices_in_qdrant(query: str, filters: Dict[str, Any] = None, 
     except Exception as e:
         print(f"❌ Error searching Qdrant: {e}")
         # Fallback to local search
-        return search_invoices_by_similarity(query, filters or {}, limit)
+        return search_invoices_by_similarity(query, filters if filters else {}, limit)
 
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """Calculate cosine similarity between two vectors"""
@@ -602,14 +620,31 @@ async def analyze_invoices(
         # Also clear Qdrant collection to start fresh
         if qdrant_client:
             try:
-                # Delete all points in collection
-                qdrant_client.delete(
-                    collection_name=COLLECTION_NAME,
-                    points_selector=models.FilterSelector(
-                        filter=models.Filter()  # Delete all points
+                # Get collection info to check if it exists
+                try:
+                    collection_info = qdrant_client.get_collection(COLLECTION_NAME)
+                    # Delete all points using scroll and delete
+                    scroll_result = qdrant_client.scroll(
+                        collection_name=COLLECTION_NAME,
+                        limit=10000,  # Get up to 10k points
+                        with_payload=False,
+                        with_vectors=False
                     )
-                )
-                print("✅ Cleared previous session data from Qdrant")
+                    
+                    if scroll_result[0]:  # If there are points to delete
+                        point_ids = [point.id for point in scroll_result[0]]
+                        qdrant_client.delete(
+                            collection_name=COLLECTION_NAME,
+                            points_selector=models.PointIdsList(points=point_ids)
+                        )
+                        print(f"✅ Cleared {len(point_ids)} points from Qdrant collection")
+                    else:
+                        print("✅ Qdrant collection already empty")
+                        
+                except Exception:
+                    # Collection doesn't exist, no need to clear
+                    print("✅ Qdrant collection doesn't exist, no data to clear")
+                    
             except Exception as e:
                 print(f"⚠️ Could not clear Qdrant data: {e}")
         
@@ -941,6 +976,11 @@ async def chatbot_query(request: ChatbotRequest):
         employee_keywords = ['rani', 'sachin', 'sushma', 'kumar', 'ramesh', 'sunil', 'avinash', 'hardhik', 'shivam', 'unknown']
         search_limit = 20 if any(name in query.lower() for name in employee_keywords) else 10
         relevant_invoices = await search_invoices_in_qdrant(query, filters, limit=search_limit)
+        
+        # If Qdrant search returns no results, fall back to local storage search
+        if not relevant_invoices and invoices_storage:
+            print("⚠️ Qdrant search returned no results, falling back to local storage")
+            relevant_invoices = search_invoices_by_similarity(query, filters, search_limit)
         
         # Build context from retrieved invoices
         context = build_context_from_invoices(relevant_invoices)
