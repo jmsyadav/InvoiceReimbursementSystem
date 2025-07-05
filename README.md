@@ -2,7 +2,7 @@
 
 An intelligent Invoice Reimbursement System that analyzes employee expense claims against company policies using Large Language Models (LLMs). The system provides automated invoice processing, fraud detection, and a conversational chatbot interface for querying processed invoices with vector database integration.
 
-Features
+##Features
 Core Functionality
 Smart Invoice Analysis: Automatically extracts and analyzes data from PDF invoices against HR reimbursement policies
 LLM-Powered Decision Making: Uses Groq API with Llama3-8b-8192 for intelligent policy compliance analysis
